@@ -36,6 +36,48 @@ static int base_cb(struct dl_phdr_info* info, size_t, void* data) {
     return 0;
 }
 
+// Follow thunks that sit in front of the real implementation:
+//   b <target>                    (bionic libEGL style)
+//   adrp xN, page; ldr xN,[xN,#off]; br xN     (PLT style)
+// Returns the resolved address or nullptr when the entry is a real function.
+static void* follow_thunk(void* entry) {
+    const uint32_t* c = (const uint32_t*)entry;
+    uint32_t i0 = c[0];
+
+    if ((i0 >> 26) == 0x05) {                      // b imm26
+        int32_t imm = (int32_t)(i0 & 0x03FFFFFF);
+        if (imm & 0x02000000) imm -= 0x04000000;
+        return (void*)((uintptr_t)entry + (intptr_t)imm * 4);
+    }
+
+    // adrp xN, page
+    if ((i0 & 0x9F000000u) == 0x90000000u) {
+        uint32_t rd = i0 & 0x1F;
+        int64_t immlo = (i0 >> 29) & 0x3;
+        int64_t immhi = (i0 >> 5) & 0x7FFFF;
+        int64_t imm = (immhi << 2) | immlo;
+        if (imm & (1LL << 20)) imm -= (1LL << 21);
+        uintptr_t page = ((uintptr_t)entry & ~0xFFFULL) + (uintptr_t)(imm << 12);
+        uint32_t i1 = c[1];
+        // ldr xN, [xN, #imm12*8]   (64-bit, unsigned offset)
+        if ((i1 & 0xFFC00000u) == 0xF9400000u && (i1 & 0x1F) == rd) {
+            uintptr_t slot = page + ((i1 >> 10) & 0xFFF) * 8;
+            void* fn = *(void**)slot;
+            if (fn) return fn;
+        }
+        // add xN, xN, #imm ; ldr xN, [xN]
+        if ((i1 & 0x7F800000u) == 0x11000000u && (i1 & 0x1F) == rd && ((i1 >> 5) & 0x1F) == rd) {
+            uintptr_t addr = page + ((i1 >> 10) & 0xFFF);
+            uint32_t i2 = c[2];
+            if ((i2 & 0xFFC00000u) == 0xF9400000u) {
+                void* fn = *(void**)(addr + ((i2 >> 10) & 0xFFF) * 8);
+                if (fn) return fn;
+            }
+        }
+    }
+    return nullptr;
+}
+
 uintptr_t image_base(const char* soname) {
     struct Find { const char* name; uintptr_t base; } f;
     f.name = soname;
@@ -55,6 +97,15 @@ void* sym_or_offset(void* handle, const char* name, uintptr_t offset) {
 
 bool install(Hook& h, void* target, void* detour) {
     if (!target || !detour) return false;
+
+    // walk through entry thunks so we patch the body, not the jump
+    for (int hop = 0; hop < 4; hop++) {
+        void* next = follow_thunk(target);
+        if (!next || next == target) break;
+        rc_log("хук: %p -> %p (переход через thunk)", target, next);
+        target = next;
+    }
+
     h.target = target;
     const uint32_t* code = (const uint32_t*)target;
 

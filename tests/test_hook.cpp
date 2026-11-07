@@ -49,6 +49,42 @@ static int detour2(int a, int b) {
     return orig2(a, b) * 2;
 }
 
+// real body behind the thunks
+extern "C" int work3(int a, int b) {
+    volatile int t = a;
+    t = t * 5 + b;
+    t = t ^ 0x11;
+    t = t + 2;
+    return t;
+}
+
+extern "C" int work4(int a, int b) {
+    volatile int t = a;
+    t = t * 9 + b;
+    t = t ^ 0x27;
+    t = t + 3;
+    return t;
+}
+
+void* g_slot = (void*)&work4;
+
+__attribute__((naked, noinline)) extern "C" int thunk_b(int a, int b) {
+    __asm__ volatile("b work3");
+}
+
+__attribute__((naked, noinline)) extern "C" int thunk_plt(int a, int b) {
+    __asm__ volatile(
+        "adrp x16, g_slot\n"
+        "ldr x16, [x16, #:lo12:g_slot]\n"
+        "br x16\n");
+}
+
+static int (*volatile fpb)(int, int) = thunk_b;
+static int (*volatile fpp)(int, int) = thunk_plt;
+static int (*orig3)(int, int) = nullptr;
+static int detour3calls = 0;
+static int detour3(int a, int b) { detour3calls++; return orig3(a, b) + 7; }
+
 int main() {
     const int a = 4, b = 9;
     const int baseline = fp(a, b);
@@ -76,6 +112,30 @@ int main() {
         orig2 = (int (*)(int, int))h2.tramp;
         check(fp2(3, 4) == baseline2 * 2, "second hook routes to its detour");
         check(fp(a, b) == baseline + 1000, "first hook still alive");
+    }
+
+    // entry thunks: our hook must follow them and patch the real body
+    const int base3 = work3(2, 3);
+    const int base4 = work4(2, 3);
+    check(fpb(2, 3) == base3, "b-thunk calls through to the body");
+    check(fpp(2, 3) == base4, "plt-thunk calls through to the body");
+
+    rchook::Hook h4;
+    ok = rchook::install(h4, (void*)thunk_b, (void*)&detour3);
+    check(ok, "hook on a b-thunk installed");
+    if (ok) {
+        orig3 = (int (*)(int, int))h4.tramp;
+        check(fpb(2, 3) == base3 + 7, "b-thunk is intercepted");
+        check(detour3calls >= 1, "detour behind the b-thunk ran");
+        check(fpp(2, 3) == base4, "plt-thunk untouched by the first hook");
+    }
+
+    rchook::Hook h5;
+    ok = rchook::install(h5, (void*)thunk_plt, (void*)&detour3);
+    check(ok, "hook on a plt-thunk installed");
+    if (ok) {
+        orig3 = (int (*)(int, int))h5.tramp;
+        check(fpp(2, 3) == base4 + 7, "plt-thunk is intercepted");
     }
 
     // install must reject a prologue it cannot relocate

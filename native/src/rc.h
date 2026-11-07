@@ -11,11 +11,28 @@
 #include <ctime>
 #include <pthread.h>
 #include <unistd.h>
+#if defined(__ANDROID__)
 #include <android/log.h>
 #include <jni.h>
+#else
+// host build (unit tests): just enough of the JNI/NDK types to compile the
+// platform-independent parts.
+#include <cstdarg>
+typedef void* JavaVM;
+typedef void* jclass;
+typedef void* jobject;
+typedef void* jmethodID;
+typedef void* jbyteArray;
+typedef int32_t jint;
+typedef int8_t  jbyte;
+typedef int32_t jsize;
+enum { JNI_OK = 0, JNI_ERR = -1, JNI_VERSION_1_6 = 0x00010006 };
+enum { ANDROID_LOG_INFO = 4 };
+static inline int __android_log_print(int, const char*, const char*, ...) { return 0; }
+#endif
 
 #define RC_TAG "RakCRMPCheat"
-#define RC_VERSION "1.0.3"
+#define RC_VERSION "1.0.4"
 
 // ---------------------------------------------------------------- logging
 void  rc_log(const char* fmt, ...);
@@ -88,6 +105,8 @@ typedef uint32_t EGLBoolean;
 #define GL_COLOR_BUFFER_BIT     0x4000
 #define GL_DEPTH_BUFFER_BIT     0x0100
 #define GL_UNPACK_ALIGNMENT     0x0CF5
+#define EGL_TRUE                1
+#define EGL_FALSE               0
 #define EGL_WIDTH               0x3057
 #define EGL_HEIGHT              0x3056
 

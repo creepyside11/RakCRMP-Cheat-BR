@@ -39,7 +39,8 @@ static jclass   g_jniLib = nullptr;
 static jmethodID g_sendJson = nullptr;
 
 static EGLBoolean (*origSwap)(EGLDisplay, EGLSurface) = nullptr;
-static rchook::Hook hSwap, hTouch;
+static EGLBoolean (*origSwapDamage)(EGLDisplay, EGLSurface, EGLint, const EGLint*) = nullptr;
+static rchook::Hook hSwap, hSwapDamage, hTouch;
 static int   g_frameCount = 0;
 
 static void* g_gameHandle = nullptr;
@@ -49,27 +50,36 @@ typedef void (*TouchFn)(JNIEnv*, jobject, jint, jint, jint, jint, jint, jint, ji
 static TouchFn origTouch = nullptr;
 
 // ---------------------------------------------------------------- frame hook
-static EGLBoolean det_swap(EGLDisplay dpy, EGLSurface surf) {
+static void overlay_frame(EGLDisplay dpy, EGLSurface surf) {
     static bool inited = false;
     static bool failed = false;
     if (!inited && !failed) {
         inited = true;
         if (!rcgl::init()) { failed = true; rc_log("rcgl::init failed"); }
     }
-    if (inited && !failed) {
-        EGLint w = 0, h = 0;
-        eglQuerySurface(dpy, surf, EGL_WIDTH, &w);
-        eglQuerySurface(dpy, surf, EGL_HEIGHT, &h);
-        if (w > 0 && h > 0) {
-            rcui::setScreen(w, h);
-            rcgl::beginFrame(w, h);
-            if (rcui::wantsCapture()) rcgl::captureScreen(w, h);
-            rcui::draw(w, h, 0.016f);
-            rcgl::endFrame();
-            g_frameCount++;
-        }
-    }
-    return origSwap(dpy, surf);
+    if (failed) return;
+
+    EGLint w = 0, h = 0;
+    eglQuerySurface(dpy, surf, EGL_WIDTH, &w);
+    eglQuerySurface(dpy, surf, EGL_HEIGHT, &h);
+    if (w <= 0 || h <= 0) return;
+
+    rcui::setScreen(w, h);
+    rcgl::beginFrame(w, h);
+    if (rcui::wantsCapture()) rcgl::captureScreen(w, h);
+    rcui::draw(w, h, 0.016f);
+    rcgl::endFrame();
+    g_frameCount++;
+}
+
+static EGLBoolean det_swap(EGLDisplay dpy, EGLSurface surf) {
+    overlay_frame(dpy, surf);
+    return origSwap ? origSwap(dpy, surf) : EGL_TRUE;
+}
+
+static EGLBoolean det_swap_damage(EGLDisplay dpy, EGLSurface surf, EGLint n, const EGLint* rects) {
+    overlay_frame(dpy, surf);
+    return origSwapDamage ? origSwapDamage(dpy, surf, n, rects) : EGL_TRUE;
 }
 
 // ---------------------------------------------------------------- touch hook
@@ -156,8 +166,16 @@ static void* init_thread(void*) {
             g_net.hooksOk++;
             rc_log("хук eglSwapBuffers ok");
         } else {
-            g_net.hooksFail++;
-            rc_log("хук eglSwapBuffers провал");
+            // some drivers only expose the KHR entry point to Java
+            void* pDmg = dlsym(egl, "eglSwapBuffersWithDamageKHR");
+            if (pDmg && rchook::install(hSwapDamage, pDmg, (void*)&det_swap_damage)) {
+                origSwapDamage = (EGLBoolean(*)(EGLDisplay, EGLSurface, EGLint, const EGLint*))hSwapDamage.tramp;
+                g_net.hooksOk++;
+                rc_log("хук eglSwapBuffersWithDamageKHR ok");
+            } else {
+                g_net.hooksFail++;
+                rc_log("хук eglSwapBuffers провал");
+            }
         }
     } else {
         g_net.hooksFail++;
@@ -176,6 +194,7 @@ extern "C" jint JNI_OnLoad(JavaVM* vm, void*) {
     if (vm->GetEnv((void**)&env, JNI_VERSION_1_6) != JNI_OK) return JNI_ERR;
 
     jclass cls = env->FindClass("com/blackhub/bronline/game/core/JNILib");
+    if (env->ExceptionCheck()) env->ExceptionClear();
     jmethodID deliver = nullptr;
     jmethodID sendJson = nullptr;
     if (cls) {
@@ -187,7 +206,9 @@ extern "C" jint JNI_OnLoad(JavaVM* vm, void*) {
     } else {
         rc_log("JNILib не найден");
     }
+    if (env->ExceptionCheck()) env->ExceptionClear();
     rcnet::setJni(vm, g_jniLib, deliver, sendJson);
+    if (env->ExceptionCheck()) env->ExceptionClear();
 
     pthread_t th;
     pthread_create(&th, nullptr, init_thread, nullptr);

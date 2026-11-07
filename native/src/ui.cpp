@@ -41,6 +41,7 @@ static int   activeSlider = -1;
 static bool  captured = false;
 static double lastFrame = 0;
 static double startT = 0;
+static bool  rendered = false;   // overlay has drawn at least once
 
 static const char* TAB_NAMES[4] = { "Персонаж", "Транспорт", "Боты", "Отладка" };
 
@@ -155,6 +156,24 @@ static void drawButton(const char* label, float x, float y, float w, float h, fl
     rcgl::text(x + (w - tw) * 0.5f, y + (h - 17 * S) * 0.5f - 1 * S, label, 17 * S, rc_rgb(0xF0F1F4, a));
 }
 
+// cut a UTF-8 string so it fits maxw pixels at the given font size
+static void trim_to_width(char* s, float maxw, float size) {
+    if (rcgl::textWidth(s, size) <= maxw) return;
+    int n = (int)strlen(s);
+    while (n > 3) {
+        n--;
+        while (n > 0 && ((unsigned char)s[n] & 0xC0) == 0x80) n--;
+        char keep = s[n];
+        s[n] = 0;
+        if (rcgl::textWidth(s, size) <= maxw - rcgl::textWidth("…", size)) break;
+        s[n] = keep;
+    }
+    if (n > 0) { s[n] = 0; }
+    char tmp[192];
+    snprintf(tmp, sizeof(tmp), "%s…", s);
+    snprintf(s, 192, "%s", tmp);
+}
+
 static void drawInfo(const char* key, const Geo& g, float y, float a, int index) {
     char buf[192];
     if (!strcmp(key, "quest")) {
@@ -191,6 +210,8 @@ static void drawInfo(const char* key, const Geo& g, float y, float a, int index)
         fmt(buf, sizeof(buf), "%s", l ? l : "");
     }
     (void)index;
+    float avail = (g.px + g.pw - 18 * S) - g.cx;
+    trim_to_width(buf, avail, 15 * S);
     rcgl::text(g.cx, y, buf, 15 * S, rc_rgb(0x9AA0AA, a));
 }
 
@@ -288,6 +309,7 @@ void draw(int w, int h, float dt) {
         }
     }
 
+    rendered = true;
     pthread_mutex_unlock(&g_mtx);
 }
 
@@ -320,6 +342,13 @@ static void applyAction(int act) {
 
 bool onInput(const Input& in) {
     pthread_mutex_lock(&g_mtx);
+
+    // Never eat a touch before the overlay has drawn once and knows the real
+    // screen size — otherwise the game's own UI would lose input.
+    if (!rendered || W < 4.f || H < 4.f) {
+        pthread_mutex_unlock(&g_mtx);
+        return false;
+    }
     S = H / 720.f; if (S < 0.75f) S = 0.75f;
 
     bool consumed = false;
