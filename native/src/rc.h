@@ -15,7 +15,7 @@
 #include <jni.h>
 
 #define RC_TAG "RakCRMPCheat"
-#define RC_VERSION "1.0.0"
+#define RC_VERSION "1.0.1"
 
 // ---------------------------------------------------------------- logging
 void  rc_log(const char* fmt, ...);

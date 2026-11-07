@@ -40,6 +40,7 @@ static int   activeSlot = 0;
 static int   activeSlider = -1;
 static bool  captured = false;
 static double lastFrame = 0;
+static double startT = 0;
 
 static const char* TAB_NAMES[4] = { "Персонаж", "Транспорт", "Боты", "Отладка" };
 
@@ -215,6 +216,16 @@ void draw(int w, int h, float dt) {
 
     const float a = anim;
     Geo g = geo();
+
+    // --- boot badge (first seconds only, so the overlay proves it's alive)
+    if (startT == 0) startT = now;
+    double el = now - startT;
+    if (el < 12.0) {
+        float ba = (float)(el > 9.0 ? (12.0 - el) / 3.0 : 1.0);
+        char b[96];
+        fmt(b, sizeof(b), "RakCRMP Cheat %s  ·  хуки %d/%d", RC_VERSION, g_net.hooksOk, g_net.hooksFail);
+        rcgl::text(14 * S, 12 * S, b, 15 * S, RCColor(1, 1, 1, 0.55f * ba));
+    }
 
     // --- floating button
     float bx = btnNX * W, by = btnNY * H;
