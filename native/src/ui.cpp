@@ -70,8 +70,10 @@ static std::vector<Item> items() {
         v.push_back({IT_TOGGLE, "Авто-диалоги", &g_cfg.autoDialog, nullptr, 0, 0, 0});
         v.push_back({IT_TOGGLE, "Авто-звонки", &g_cfg.autoCall, nullptr, 0, 0, 0});
         v.push_back({IT_TOGGLE, "Мини-игры", &g_cfg.autoMini, nullptr, 0, 0, 0});
+        v.push_back({IT_TOGGLE, "Подарки и кейсы", &g_cfg.giftAuto, nullptr, 0, 0, 0});
         v.push_back({IT_GAP, nullptr, nullptr, nullptr, 0, 0, 0});
         v.push_back({IT_INFO, "quest", nullptr, nullptr, 0, 0, 0});
+        v.push_back({IT_INFO, "questtext", nullptr, nullptr, 0, 0, 0});
         v.push_back({IT_INFO, "dialog", nullptr, nullptr, 0, 0, 0});
     } else {
         v.push_back({IT_INFO, "hooks", nullptr, nullptr, 0, 0, 0});
@@ -156,6 +158,8 @@ static void drawInfo(const char* key, const Geo& g, float y, float a, int index)
     char buf[192];
     if (!strcmp(key, "quest")) {
         fmt(buf, sizeof(buf), "Квест: %s", g_net.slavaStage ? "в процессе" : "нет");
+    } else if (!strcmp(key, "questtext")) {
+        fmt(buf, sizeof(buf), "%s", g_net.questText[0] ? g_net.questText : "");
     } else if (!strcmp(key, "dialog")) {
         fmt(buf, sizeof(buf), "Диалоги: %s", g_cfg.autoDialog ? "авто" : "выкл");
     } else if (!strcmp(key, "hooks")) {

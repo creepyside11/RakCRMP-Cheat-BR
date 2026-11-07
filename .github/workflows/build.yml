@@ -128,6 +128,10 @@ jobs:
           done
           # the loader call must be present exactly in the dex that loads the game lib
           apps=$(ls classes*.dex | wc -l); echo "dex files: $apps"
+          # round-trip: the patched dex must still decode cleanly
+          CP=$(ls "$OLDPWD"/tools/jars/*.jar | tr '\n' ':')
+          java -cp "$CP" org.jf.baksmali.Main d classes4.dex -o /tmp/roundtrip >/dev/null
+          grep -c 'Lrakcheat/Loader;->load()V' /tmp/roundtrip/com/blackhub/bronline/game/core/JNILib.smali
 
       - uses: actions/upload-artifact@v4
         with:

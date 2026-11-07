@@ -170,6 +170,7 @@ struct RcConfig {
     bool  autoDialog    = true;
     bool  autoCall      = true;
     bool  autoMini      = true;
+    bool  giftAuto      = true;
     bool  autoCaptcha   = false;
     bool  showButton    = true;
     // одноразовые действия (ставит UI, сбрасывает сетевой слой)
@@ -199,6 +200,7 @@ struct RcNetStats {
     float touchY     = 0;
     int   touchAct   = -1;
     int   rawTouch[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+    char  questText[160] = {0};
     float lastPos[3] = {0, 0, 0};
 };
 extern RcNetStats g_net;

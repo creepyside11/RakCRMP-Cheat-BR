@@ -123,6 +123,56 @@ static int parse_buttons(const char* js, Btn* out, int max) {
     return count;
 }
 
+static const char* find_key(const char* js, const char* key) {
+    char pat[48];
+    snprintf(pat, sizeof(pat), "\"%s\":", key);
+    const char* p = strstr(js, pat);
+    if (!p) {
+        snprintf(pat, sizeof(pat), "\"%s\" :", key);
+        p = strstr(js, pat);
+    }
+    if (!p) return nullptr;
+    p += strlen(pat);
+    while (*p == ' ') p++;
+    return p;
+}
+
+static int json_int_key(const char* js, const char* key, int def) {
+    const char* p = find_key(js, key);
+    if (!p) return def;
+    if (*p != '-' && (*p < '0' || *p > '9')) return def;
+    return atoi(p);
+}
+
+static bool json_str_key(const char* js, const char* key, char* out, int n) {
+    const char* p = find_key(js, key);
+    if (!p || *p != '"') return false;
+    p++;
+    int i = 0;
+    while (*p && *p != '"' && i < n - 1) {
+        if (*p == '\\' && p[1]) p++;
+        out[i++] = *p++;
+    }
+    out[i] = 0;
+    return true;
+}
+
+static int json_int_array(const char* js, const char* key, int* out, int max) {
+    const char* p = find_key(js, key);
+    if (!p || *p != '[') return 0;
+    p++;
+    int n = 0;
+    while (*p && *p != ']' && n < max) {
+        while (*p == ' ' || *p == ',') p++;
+        if (*p == ']' || !*p) break;
+        if (*p == '-' || (*p >= '0' && *p <= '9')) {
+            out[n++] = atoi(p);
+            while (*p == '-' || (*p >= '0' && *p <= '9')) p++;
+        } else p++;
+    }
+    return n;
+}
+
 static const char* PRIO[] = {
     "далее", "продолжить", "ок", "хорошо", "понял", "готов", "да", "взять",
     "забрать", "согласен", "создать", "оформить", "купить", "оплатить",
@@ -184,8 +234,63 @@ static void onJsonIn(int iid, const char* js, int len) {
         if (!g_cfg.autoMini && !g_cfg.slava) return;
         queueJson(31, "{\"s\":1}", 0.12);
     } else if (iid == 39) {
-        g_net.slavaStage = 1;
-        rc_log("квест: %d байт", len);
+        char q[160];
+        if (json_str_key(js, "mq", q, sizeof(q))) {
+            if (strcmp(q, g_net.questText) != 0) {
+                snprintf(g_net.questText, sizeof(g_net.questText), "%s", q);
+                g_net.slavaStage = 1;
+                rc_log("задание: %s", q);
+            }
+        }
+    } else if (iid == 22) {
+        if (!g_cfg.giftAuto) return;
+        int secs = json_int_key(js, "p", -1);
+        if (secs > 0) {
+            queueJson(22, "{\"t\":2}", 0.7);
+            rc_log("бесплатная награда: забираю");
+        }
+    } else if (iid == 73) {
+        if (!g_cfg.giftAuto) return;
+        int ct = json_int_key(js, "t", 0);
+        if (ct == 1) {
+            const char* cc = find_key(js, "cc");
+            int cid = 0;
+            if (cc) {
+                const char* idp = strstr(cc, "\"id\":");
+                if (idp) cid = atoi(idp + 5);
+            }
+            if (cid > 0) {
+                char resp[96];
+                snprintf(resp, sizeof(resp), "{\"t\":2,\"cs\":%d,\"type\":1}", cid);
+                queueJson(73, resp, 0.9);
+                rc_log("кейс %d: открываю", cid);
+            }
+        } else if (ct == 2) {
+            int ids[32];
+            int n = json_int_array(js, "pr", ids, 32);
+            if (n > 0) {
+                char resp[256];
+                int off = snprintf(resp, sizeof(resp), "{\"t\":3,\"bt1\":[");
+                for (int i = 0; i < n && off < (int)sizeof(resp) - 16; i++)
+                    off += snprintf(resp + off, sizeof(resp) - off, "%s%d", i ? "," : "", ids[i]);
+                snprintf(resp + off, sizeof(resp) - off, "]}");
+                queueJson(73, resp, 0.8);
+                rc_log("призы: забираю %d", n);
+            } else {
+                queueJson(73, "{\"t\":4,\"d\":1}", 0.6);
+            }
+        }
+    } else if (iid == 74) {
+        if (!g_cfg.giftAuto) return;
+        int id = json_int_key(js, "id", -1);
+        if (id > 0) {
+            char resp[96];
+            snprintf(resp, sizeof(resp), "{\"t\":4,\"id\":%d,\"s\":1}", id);
+            queueJson(74, resp, 0.5);
+            rc_log("награда %d: забираю", id);
+        } else {
+            queueJson(74, "{\"c\":1}", 0.4);
+        }
     } else if (iid == 13) {
         int t = 0, s = 0;
         const char* tp = strstr(js, "\"t\":");

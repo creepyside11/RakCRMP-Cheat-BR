@@ -3,3 +3,4 @@ out/
 tools/jars/
 native/src/font_atlas.h
 *.apk
+*.log

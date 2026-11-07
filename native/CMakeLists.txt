@@ -29,4 +29,4 @@ target_link_libraries(rakcheat
 )
 
 # JNI_OnLoad must stay visible
-set_target_properties(rakcheat PROPERTIES LINK_FLAGS "-Wl,--no-undefined -Wl,-z,max-page-size=16384")
+set_target_properties(rakcheat PROPERTIES LINK_FLAGS "-Wl,--no-undefined -Wl,-z,max-page-size=16384 -Wl,--strip-all")
