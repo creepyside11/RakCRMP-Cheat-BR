@@ -183,7 +183,8 @@ static void drawInfo(const char* key, const Geo& g, float y, float a, int index)
     } else if (!strcmp(key, "dialog")) {
         fmt(buf, sizeof(buf), "Диалоги: %s", g_cfg.autoDialog ? "авто" : "выкл");
     } else if (!strcmp(key, "hooks")) {
-        fmt(buf, sizeof(buf), "Хуки: %d ок / %d провал", g_net.hooksOk, g_net.hooksFail);
+        fmt(buf, sizeof(buf), "Хуки: %d ок / %d провал, GLES%d", g_net.hooksOk, g_net.hooksFail,
+            rcgl::isES3() ? 3 : 2);
     } else if (!strcmp(key, "tx")) {
         fmt(buf, sizeof(buf), "Отправлено: %d пакетов, sync %d", g_net.txTotal, g_net.syncOut);
     } else if (!strcmp(key, "rx")) {

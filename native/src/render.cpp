@@ -78,6 +78,84 @@ void main(){
   o = vec4(vCol.rgb, vCol.a * a);
 })";
 
+
+// ---------------------------------------------------------------- ES 2.0 path
+// Some launchers create an ES 2.0 context. A 300 es shader fails to compile
+// there and the overlay would silently render nothing, so keep a full ES2 copy.
+static const char* VS_SOLID_100 = R"(#version 100
+attribute vec2 aPos;
+attribute vec2 aLocal;
+attribute vec2 aHalf;
+attribute float aRad;
+attribute vec4 aCol;
+attribute float aMode;
+uniform vec2 uScreen;
+varying vec2 vLocal; varying vec2 vHalf; varying float vRad; varying vec4 vCol; varying float vMode;
+void main(){
+  vLocal = aLocal; vHalf = aHalf; vRad = aRad; vCol = aCol; vMode = aMode;
+  gl_Position = vec4(aPos.x / uScreen.x * 2.0 - 1.0, 1.0 - aPos.y / uScreen.y * 2.0, 0.0, 1.0);
+})";
+
+static const char* FS_SOLID_100 = R"(#version 100
+precision mediump float;
+varying vec2 vLocal; varying vec2 vHalf; varying float vRad; varying vec4 vCol; varying float vMode;
+uniform sampler2D uTex; uniform vec2 uScreen; uniform float uSoft;
+float sdBox(vec2 p, vec2 h, float r){
+  vec2 q = abs(p) - (h - vec2(r));
+  return length(max(q, vec2(0.0))) + min(max(q.x, q.y), 0.0) - r;
+}
+void main(){
+  float d = sdBox(vLocal, vHalf, vRad);
+  if (vMode < 0.5) {
+    float a = clamp(0.5 - d, 0.0, 1.0);
+    gl_FragColor = vec4(vCol.rgb, vCol.a * a);
+  } else if (vMode < 1.5) {
+    float a = 1.0 - clamp(d / max(uSoft, 1.0) + 0.5, 0.0, 1.0);
+    gl_FragColor = vec4(vCol.rgb, vCol.a * a * a);
+  } else {
+    vec2 uv = gl_FragCoord.xy / uScreen;
+    float r = max(uSoft, 1.0);
+    vec3 c = texture2D(uTex, uv).rgb * 0.20;
+    c += texture2D(uTex, uv + vec2( r, 0.0) / uScreen).rgb * 0.06;
+    c += texture2D(uTex, uv + vec2(-r, 0.0) / uScreen).rgb * 0.06;
+    c += texture2D(uTex, uv + vec2(0.0,  r) / uScreen).rgb * 0.06;
+    c += texture2D(uTex, uv + vec2(0.0, -r) / uScreen).rgb * 0.06;
+    c += texture2D(uTex, uv + vec2( r * 0.6,  r * 0.6) / uScreen).rgb * 0.06;
+    c += texture2D(uTex, uv + vec2(-r * 0.6,  r * 0.6) / uScreen).rgb * 0.06;
+    c += texture2D(uTex, uv + vec2( r * 0.6, -r * 0.6) / uScreen).rgb * 0.06;
+    c += texture2D(uTex, uv + vec2(-r * 0.6, -r * 0.6) / uScreen).rgb * 0.06;
+    c += texture2D(uTex, uv + vec2( r * 1.6, 0.0) / uScreen).rgb * 0.03;
+    c += texture2D(uTex, uv + vec2(-r * 1.6, 0.0) / uScreen).rgb * 0.03;
+    c += texture2D(uTex, uv + vec2(0.0,  r * 1.6) / uScreen).rgb * 0.03;
+    c += texture2D(uTex, uv + vec2(0.0, -r * 1.6) / uScreen).rgb * 0.03;
+    float a = clamp(0.5 - d, 0.0, 1.0);
+    gl_FragColor = vec4(mix(c, vCol.rgb, clamp(vCol.a, 0.0, 1.0)), a);
+  }
+})";
+
+static const char* VS_TEXT_100 = R"(#version 100
+attribute vec2 aPos;
+attribute vec2 aUV;
+attribute vec4 aCol;
+uniform vec2 uScreen;
+varying vec2 vUV; varying vec4 vCol;
+void main(){
+  vUV = aUV; vCol = aCol;
+  gl_Position = vec4(aPos.x / uScreen.x * 2.0 - 1.0, 1.0 - aPos.y / uScreen.y * 2.0, 0.0, 1.0);
+})";
+
+static const char* FS_TEXT_100 = R"(#version 100
+precision mediump float;
+varying vec2 vUV; varying vec4 vCol;
+uniform sampler2D uTex;
+void main(){
+  float a = texture2D(uTex, vUV).a;
+  gl_FragColor = vec4(vCol.rgb, vCol.a * a);
+})";
+
+static const char* ATTR_SOLID[] = {"aPos", "aLocal", "aHalf", "aRad", "aCol", "aMode"};
+static const char* ATTR_TEXT[]  = {"aPos", "aUV", "aCol"};
+
 static void flush();
 
 static GLuint progSolid = 0, progText = 0;
@@ -88,6 +166,7 @@ static GLuint texAtlas = 0, texScreen = 0;
 static int   texScreenW = 0, texScreenH = 0;
 static int   screenW = 1, screenH = 1;
 static bool  ready = false;
+static bool  es3 = true;      // ES 3.0 context (shaders + VAOs available)
 
 static std::vector<float> vSolid, vText;
 static int  batchMode = -1;   // 0 = solid, 1 = text
@@ -108,13 +187,17 @@ static GLuint compile(GLenum type, const char* src) {
     return s;
 }
 
-static GLuint link(const char* vs, const char* fs) {
+static GLuint link(const char* vs, const char* fs, const char** attrs, int nattr) {
     GLuint v = compile(GL_VERTEX_SHADER, vs);
     GLuint f = compile(GL_FRAGMENT_SHADER, fs);
     if (!v || !f) return 0;
     GLuint p = glCreateProgram();
     glAttachShader(p, v);
     glAttachShader(p, f);
+    if (!es3) {
+        // ES2 has no layout(location=), so bind before linking
+        for (int i = 0; i < nattr; i++) glBindAttribLocation(p, (GLuint)i, attrs[i]);
+    }
     glLinkProgram(p);
     GLint ok = 0;
     glGetProgramiv(p, GL_LINK_STATUS, &ok);
@@ -124,8 +207,22 @@ static GLuint link(const char* vs, const char* fs) {
 
 bool init() {
     if (ready) return true;
-    progSolid = link(VS_SOLID, FS_SOLID);
-    progText  = link(VS_TEXT, FS_TEXT);
+
+    const char* ver = (const char*)glGetString(GL_VERSION);
+    es3 = true;
+    if (ver) {
+        // "OpenGL ES 3.2 v1.r32..." / "OpenGL ES 2.0 ..."
+        int major = 0;
+        const char* p = ver;
+        while (*p && !(*p >= '0' && *p <= '9')) p++;
+        if (*p) major = *p - '0';
+        es3 = major >= 3;
+        rc_log("гласы: %s -> ветка ES%d", ver, es3 ? 3 : 2);
+    }
+    progSolid = es3 ? link(VS_SOLID, FS_SOLID, nullptr, 0)
+                    : link(VS_SOLID_100, FS_SOLID_100, ATTR_SOLID, 6);
+    progText  = es3 ? link(VS_TEXT, FS_TEXT, nullptr, 0)
+                    : link(VS_TEXT_100, FS_TEXT_100, ATTR_TEXT, 3);
     if (!progSolid || !progText) return false;
 
     uSolidScreen = glGetUniformLocation(progSolid, "uScreen");
@@ -134,15 +231,15 @@ bool init() {
     uTextScreen  = glGetUniformLocation(progText, "uScreen");
     uTextTex     = glGetUniformLocation(progText, "uTex");
 
-    glGenVertexArrays(1, &vaoSolid);
+    if (es3) glGenVertexArrays(1, &vaoSolid);
     glGenBuffers(1, &vboSolid);
-    glBindVertexArray(vaoSolid);
+    if (es3) glBindVertexArray(vaoSolid);
     glBindBuffer(GL_ARRAY_BUFFER, vboSolid);
     glBufferData(GL_ARRAY_BUFFER, 1 << 21, nullptr, GL_DYNAMIC_DRAW);
 
-    glGenVertexArrays(1, &vaoText);
+    if (es3) glGenVertexArrays(1, &vaoText);
     glGenBuffers(1, &vboText);
-    glBindVertexArray(vaoText);
+    if (es3) glBindVertexArray(vaoText);
     glBindBuffer(GL_ARRAY_BUFFER, vboText);
     glBufferData(GL_ARRAY_BUFFER, 1 << 20, nullptr, GL_DYNAMIC_DRAW);
 
@@ -157,7 +254,8 @@ bool init() {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
     ready = true;
-    rc_log("render ready (atlas %ux%u, font %d)", rc_atlas_w, rc_atlas_h, rc_font_size);
+    rc_log("рендер готов: атлас %ux%u, шрифт %d, ES%d", rc_atlas_w, rc_atlas_h,
+           rc_font_size, es3 ? 3 : 2);
     return true;
 }
 
@@ -201,7 +299,7 @@ static void flushSolid() {
     glUniform1f(uSolidSoft, curSoft);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, texScreen);
-    glBindVertexArray(vaoSolid);
+    if (es3) glBindVertexArray(vaoSolid);
     glBindBuffer(GL_ARRAY_BUFFER, vboSolid);
     size_t bytes = vSolid.size() * sizeof(float);
     if (bytes > (1u << 21)) bytes = 1u << 21;
@@ -224,7 +322,7 @@ static void flushText() {
     glUniform1i(uTextTex, 0);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, texAtlas);
-    glBindVertexArray(vaoText);
+    if (es3) glBindVertexArray(vaoText);
     glBindBuffer(GL_ARRAY_BUFFER, vboText);
     size_t bytes = vText.size() * sizeof(float);
     if (bytes > (1u << 20)) bytes = 1u << 20;
@@ -245,9 +343,11 @@ void flush() {
 
 void endFrame() {
     flush();
-    glBindVertexArray(0);
+    if (es3) glBindVertexArray(0);
     glUseProgram(0);
 }
+
+bool isES3() { return es3; }
 
 static void quadSolid(float x, float y, float w, float h, float radius, RCColor c, int mode) {
     if (!ready) return;

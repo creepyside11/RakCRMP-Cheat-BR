@@ -249,6 +249,27 @@ def load_key(pk8_path, cert_pem_path):
 
 
 # --------------------------------------------------------------------- verify
+def _check_dex(data, name):
+    """A dex the runtime will refuse to load is the classic 'package corrupt'."""
+    errs = []
+    if data[:4] != b"dex\n" or data[7] != 0:
+        return ["%s: bad magic" % name]
+    if len(data) < 112:
+        return ["%s: too short" % name]
+    file_size, header_size, endian = struct.unpack_from("<III", data, 32)
+    if file_size != len(data):
+        errs.append("%s: file_size %d != %d" % (name, file_size, len(data)))
+    if header_size != 0x70:
+        errs.append("%s: header_size %#x" % (name, header_size))
+    if endian != 0x12345678:
+        errs.append("%s: bad endian tag" % name)
+    if hashlib.sha1(data[32:]).digest() != data[12:32]:
+        errs.append("%s: sha1 signature mismatch" % name)
+    if (zlib.adler32(data[12:]) & 0xFFFFFFFF) != struct.unpack_from("<I", data, 8)[0]:
+        errs.append("%s: adler32 checksum mismatch" % name)
+    return errs
+
+
 def verify(path, expect_cert_sha256=None):
     """Structural check: zip consistency, alignment, v2 digest + signature."""
     import zipfile
@@ -262,6 +283,8 @@ def verify(path, expect_cert_sha256=None):
             errs.append("size %s" % i.filename)
         if (zlib.crc32(data) & 0xFFFFFFFF) != i.CRC:
             errs.append("crc %s" % i.filename)
+        if i.filename.endswith(".dex"):
+            errs.extend(_check_dex(data, i.filename))
         if i.compress_type != 0:
             continue
         o = i.header_offset

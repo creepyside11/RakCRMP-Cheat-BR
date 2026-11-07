@@ -32,7 +32,7 @@ static inline int __android_log_print(int, const char*, const char*, ...) { retu
 #endif
 
 #define RC_TAG "RakCRMPCheat"
-#define RC_VERSION "1.0.6"
+#define RC_VERSION "1.0.7"
 
 // ---------------------------------------------------------------- logging
 void  rc_log(const char* fmt, ...);
@@ -105,12 +105,15 @@ typedef uint32_t EGLBoolean;
 #define GL_COLOR_BUFFER_BIT     0x4000
 #define GL_DEPTH_BUFFER_BIT     0x0100
 #define GL_UNPACK_ALIGNMENT     0x0CF5
+#define GL_VERSION              0x1F02
 #define EGL_TRUE                1
 #define EGL_FALSE               0
 #define EGL_WIDTH               0x3057
 #define EGL_HEIGHT              0x3056
 
 extern "C" {
+const GLubyte* glGetString(GLenum);
+void    glBindAttribLocation(GLuint, GLuint, const GLchar*);
 GLuint  glCreateShader(GLenum);
 void    glShaderSource(GLuint, GLsizei, const GLchar* const*, const GLint*);
 void    glCompileShader(GLuint);
@@ -241,6 +244,7 @@ void* sym_or_offset(void* handle, const char* name, uintptr_t offset);
 // ---------------------------------------------------------------- render
 namespace rcgl {
 bool  init();
+bool  isES3();
 void  beginFrame(int w, int h);
 void  endFrame();
 void  captureScreen(int w, int h);
