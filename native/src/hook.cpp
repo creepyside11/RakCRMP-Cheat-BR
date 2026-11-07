@@ -3,6 +3,9 @@
 #include <sys/mman.h>
 #include <dlfcn.h>
 #include <unistd.h>
+#include <link.h>
+#include <string.h>
+#include <stdint.h>
 
 namespace rchook {
 
@@ -21,6 +24,33 @@ static bool pc_relative(uint32_t insn) {
 void* resolve(void* handle, const char* sym) {
     if (!handle) return nullptr;
     return dlsym(handle, sym);
+}
+
+static int base_cb(struct dl_phdr_info* info, size_t, void* data) {
+    struct Find { const char* name; uintptr_t base; }* f =
+        (struct Find*)data;
+    if (info->dlpi_name && strstr(info->dlpi_name, f->name)) {
+        f->base = (uintptr_t)info->dlpi_addr;
+        return 1;
+    }
+    return 0;
+}
+
+uintptr_t image_base(const char* soname) {
+    struct Find { const char* name; uintptr_t base; } f;
+    f.name = soname;
+    f.base = 0;
+    dl_iterate_phdr(base_cb, &f);
+    return f.base;
+}
+
+void* sym_or_offset(void* handle, const char* name, uintptr_t offset) {
+    void* p = handle ? dlsym(handle, name) : nullptr;
+    if (p) return p;
+    uintptr_t base = image_base("libblackrussia-client.so");
+    if (!base) return nullptr;
+    rc_log("символ %s не найден, беру смещение +0x%lx", name, (unsigned long)offset);
+    return (void*)(base + offset);
 }
 
 bool install(Hook& h, void* target, void* detour) {

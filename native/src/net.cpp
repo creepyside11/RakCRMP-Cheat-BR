@@ -1,6 +1,8 @@
 // Network layer: RakNet hooks + feature engine.
 #include "rc.h"
+#include "packets.h"
 #include <dlfcn.h>
+#include <stdint.h>
 #include <string.h>
 #include <pthread.h>
 #include <vector>
@@ -332,88 +334,6 @@ static void det_proc(void* self, unsigned int addr, unsigned short port, const c
 }
 
 // ---------------------------------------------------------------- outgoing
-static float g_off[3] = {0, 0, 0};
-static float g_prev[3] = {0, 0, 0};
-static bool  g_havePrev = false;
-static bool  g_wasSpeed = false;
-
-static bool plausible_pos(float x, float y, float z) {
-    if (!(x == x) || !(y == y) || !(z == z)) return false;
-    if (fabsf(x) > 1e5f || fabsf(y) > 1e5f || fabsf(z) > 1e5f) return false;
-    return true;
-}
-
-static void apply_player_sync(char* d, int len) {
-    if (len < 37) return;
-    float px = rd_f(d + 7), py = rd_f(d + 11), pz = rd_f(d + 15);
-    if (!plausible_pos(px, py, pz)) {
-        static int warned = 0;
-        if (warned++ < 3) rc_log("sync 0x1E: позиция не похожа на позицию (len %d)", len);
-        return;
-    }
-    if ((unsigned char)d[35] > 100 || (unsigned char)d[36] > 100) {
-        static int warned2 = 0;
-        if (warned2++ < 3) rc_log("sync 0x1E: HP-байт вне 0..100 — патч выключен");
-        return;
-    }
-    g_net.lastPos[0] = px; g_net.lastPos[1] = py; g_net.lastPos[2] = pz;
-    g_net.lastHp = (float)(unsigned char)d[35];
-
-    if (g_cfg.immortal || g_cfg.fastHeal) {
-        d[35] = 100;
-        d[36] = 100;
-        g_net.hpPatched++;
-    }
-    float nx = px, ny = py, nz = pz;
-    if (g_cfg.tpPulse > 0) {
-        nx = g_cfg.tpPos[0]; ny = g_cfg.tpPos[1]; nz = g_cfg.tpPos[2];
-        g_cfg.tpPulse--;
-        g_off[0] = g_off[1] = g_off[2] = 0;
-        wr_f(d + 41, 0); wr_f(d + 45, 0); wr_f(d + 49, 0);
-    } else if (g_cfg.speedHack && g_cfg.speedMul > 1.02f) {
-        if (g_havePrev) {
-            g_off[0] += (px - g_prev[0]) * (g_cfg.speedMul - 1.f);
-            g_off[1] += (py - g_prev[1]) * (g_cfg.speedMul - 1.f);
-            g_off[2] += (pz - g_prev[2]) * (g_cfg.speedMul - 1.f);
-        }
-        nx += g_off[0]; ny += g_off[1]; nz += g_off[2];
-        g_wasSpeed = true;
-    } else if (g_wasSpeed) {
-        g_off[0] = g_off[1] = g_off[2] = 0;
-        g_wasSpeed = false;
-    }
-    g_prev[0] = px; g_prev[1] = py; g_prev[2] = pz;
-    g_havePrev = true;
-    if (nx != px || ny != py || nz != pz) {
-        wr_f(d + 7, nx); wr_f(d + 11, ny); wr_f(d + 15, nz);
-    }
-}
-
-static void apply_vehicle_sync(char* d, int len) {
-    if (len < 55) return;
-    if (g_cfg.vehGod) {
-        wr_f(d + 49, 1000.f);
-        d[53] = 100;
-        d[54] = 100;
-    }
-    if (g_cfg.vehFixPulse > 0) {
-        wr_f(d + 49, 1000.f);
-        g_cfg.vehFixPulse--;
-    }
-    if (g_cfg.vehTpPulse > 0) {
-        wr_f(d + 25, g_cfg.vehTpPos[0]);
-        wr_f(d + 29, g_cfg.vehTpPos[1]);
-        wr_f(d + 33, g_cfg.vehTpPos[2]);
-        wr_f(d + 37, 0); wr_f(d + 41, 0); wr_f(d + 45, 0);
-        g_cfg.vehTpPulse--;
-    } else if (g_cfg.vehSpeed && g_cfg.vehSpeedMul > 1.02f) {
-        float vx = rd_f(d + 37), vy = rd_f(d + 41), vz = rd_f(d + 45);
-        wr_f(d + 37, vx * g_cfg.vehSpeedMul);
-        wr_f(d + 41, vy * g_cfg.vehSpeedMul);
-        wr_f(d + 45, vz * g_cfg.vehSpeedMul);
-    }
-}
-
 static int det_send(void* self, const char* data, int len, int prio, int rel, char ch) {
     g_net.txTotal++;
     if (!data || len <= 0) return origSend(self, data, len, prio, rel, ch);
@@ -428,9 +348,9 @@ static int det_send(void* self, const char* data, int len, int prio, int rel, ch
 
     if (len < (int)sizeof(buf) && (id == 0x1E || id == 0x22 || id == 0x05)) {
         memcpy(buf, data, len);
-        if (id == 0x1E) { apply_player_sync(buf, len); g_net.syncOut++; }
-        else if (id == 0x22) apply_vehicle_sync(buf, len);
-        else if (len > 7) { if (g_cfg.immortal) { buf[5] = 100; buf[6] = 100; } }
+        if (id == 0x1E) { rcpkt::playerSync(buf, len); g_net.syncOut++; }
+        else if (id == 0x22) rcpkt::vehicleSync(buf, len);
+        else rcpkt::passengerSync(buf, len);
         touch = memcmp(buf, data, len) != 0;
         data = buf;
         useLen = len;
@@ -442,6 +362,11 @@ static int det_send(void* self, const char* data, int len, int prio, int rel, ch
 }
 
 // ---------------------------------------------------------------- install
+// Offsets inside libblackrussia-client.so of the raknet build shipped with the
+// base APK. Used only when dlsym cannot resolve the mangled name.
+static const uintptr_t OFF_SEND = 0x1a51278;
+static const uintptr_t OFF_PROC = 0x1a52978;
+
 static void* open_game() {
     void* h = dlopen("libblackrussia-client.so", RTLD_NOW | RTLD_NOLOAD);
     if (!h) h = dlopen("libblackrussia-client.so", RTLD_NOW);
@@ -453,8 +378,8 @@ void install() {
     if (!game) { rc_log("не нашла libblackrussia-client.so"); g_net.hooksFail++; return; }
     rc_log("libblackrussia-client.so: %p", game);
 
-    void* pSend = dlsym(game, "_ZN9RakClient4SendEPKci14PacketPriority17PacketReliabilityc");
-    void* pProc = dlsym(game, "_ZN9RakClient20ProcessNetworkPacketEjtPKci");
+    void* pSend = rchook::sym_or_offset(game, "_ZN9RakClient4SendEPKci14PacketPriority17PacketReliabilityc", OFF_SEND);
+    void* pProc = rchook::sym_or_offset(game, "_ZN9RakClient20ProcessNetworkPacketEjtPKci", OFF_PROC);
     if (!pSend) rc_log("RakClient::Send не найден");
     if (!pProc) rc_log("RakClient::ProcessNetworkPacket не найден");
 

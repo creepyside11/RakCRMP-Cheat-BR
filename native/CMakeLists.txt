@@ -10,6 +10,7 @@ add_library(rakcheat SHARED
     src/render.cpp
     src/ui.cpp
     src/net.cpp
+    src/packets.cpp
 )
 
 target_compile_options(rakcheat PRIVATE -O2 -fno-stack-protector -fno-exceptions -fno-rtti -Wall -Wno-unused-parameter)

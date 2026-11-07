@@ -15,7 +15,7 @@
 #include <jni.h>
 
 #define RC_TAG "RakCRMPCheat"
-#define RC_VERSION "1.0.1"
+#define RC_VERSION "1.0.3"
 
 // ---------------------------------------------------------------- logging
 void  rc_log(const char* fmt, ...);
@@ -215,6 +215,8 @@ struct Hook {
 };
 bool  install(Hook& h, void* target, void* detour);
 void* resolve(void* handle, const char* sym);
+uintptr_t image_base(const char* soname);
+void* sym_or_offset(void* handle, const char* name, uintptr_t offset);
 }
 
 // ---------------------------------------------------------------- render

@@ -52,6 +52,9 @@ jobs:
           unzip -l /tmp/base.apk | grep -q 'lib/arm64-v8a/libblackrussia-client.so'
           unzip -l /tmp/base.apk | grep -c 'classes'
 
+      - name: Tests
+        run: CXX=clang++ ./tools/run_tests.sh
+
       - name: Font atlas
         run: |
           set -e

@@ -134,7 +134,9 @@ static void* init_thread(void*) {
 
     // touch
     if (game) {
-        void* pTouch = dlsym(game, "Java_com_blackhub_bronline_game_core_JNILib_multiTouchEvent");
+        // 0x1902270 = Java_..._multiTouchEvent in the raknet build of the base APK
+        void* pTouch = rchook::sym_or_offset(
+            game, "Java_com_blackhub_bronline_game_core_JNILib_multiTouchEvent", 0x1902270);
         if (pTouch && rchook::install(hTouch, pTouch, (void*)&jni_multiTouch)) {
             origTouch = (TouchFn)hTouch.tramp;
             g_net.hooksOk++;
