@@ -1,0 +1,132 @@
+name: build-apk
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths-ignore:
+      - 'keystore/**'
+      - 'README.md'
+      - '*.md'
+
+permissions:
+  contents: write
+
+env:
+  VERSION_FILE: VERSION
+  BASE_APK_URL: https://github.com/${{ github.repository }}/releases/download/base/launcher-base.apk
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Keystore
+        run: |
+          set -e
+          mkdir -p keystore
+          if [ ! -f keystore/rakcrmp.p12 ]; then
+            keytool -genkeypair -keystore keystore/rakcrmp.p12 -storetype PKCS12 \
+              -alias rakcrmp -keyalg RSA -keysize 2048 -validity 10000 \
+              -storepass rakcrmp123 -keypass rakcrmp123 \
+              -dname "CN=RakCRMP Cheat, O=RAK, C=RU"
+            git config user.name "rakcrmp-bot"
+            git config user.email "rakcrmp@users.noreply.github.com"
+            git add keystore/rakcrmp.p12
+            git commit -m "signing key [skip ci]" || true
+            git push origin HEAD:main || true
+          fi
+          ls -la keystore
+
+      - name: Base APK
+        run: |
+          set -e
+          curl -fL --retry 3 -o /tmp/base.apk "$BASE_APK_URL"
+          ls -lh /tmp/base.apk
+          unzip -l /tmp/base.apk | grep -q 'lib/arm64-v8a/libblackrussia-client.so'
+          unzip -l /tmp/base.apk | grep -c 'classes'
+
+      - name: Font atlas
+        run: |
+          set -e
+          pip install --quiet pillow
+          mkdir -p /tmp/font
+          unzip -o -q /tmp/base.apk 'assets/Fonts/Roboto-Regular.ttf' -d /tmp/font
+          python3 tools/make_font.py --ttf /tmp/font/assets/Fonts/Roboto-Regular.ttf --out native/src/font_atlas.h
+          wc -c native/src/font_atlas.h
+
+      - name: NDK build
+        run: |
+          set -e
+          NDK="${ANDROID_NDK_LATEST_HOME:-$ANDROID_NDK_HOME}"
+          if [ -z "$NDK" ] || [ ! -d "$NDK" ]; then
+            NDK=$(ls -d "$ANDROID_HOME"/ndk/* | sort -V | tail -1)
+          fi
+          echo "NDK=$NDK"
+          cmake -S native -B build \
+            -DCMAKE_TOOLCHAIN_FILE="$NDK/build/cmake/android.toolchain.cmake" \
+            -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM=android-24 \
+            -DANDROID_STL=c++_static -DCMAKE_BUILD_TYPE=Release
+          cmake --build build -j"$(nproc)"
+          ls -lh build/librakcheat.so
+          readelf -d build/librakcheat.so | head -20
+
+      - name: Smali toolchain
+        run: |
+          set -e
+          mkdir -p tools/jars
+          base=https://repo1.maven.org/maven2
+          curl -fsSL -o tools/jars/smali.jar      $base/org/smali/smali/2.5.2/smali-2.5.2.jar
+          curl -fsSL -o tools/jars/baksmali.jar   $base/org/smali/baksmali/2.5.2/baksmali-2.5.2.jar
+          curl -fsSL -o tools/jars/dexlib2.jar    $base/org/smali/dexlib2/2.5.2/dexlib2-2.5.2.jar
+          curl -fsSL -o tools/jars/util.jar       $base/org/smali/util/2.5.2/util-2.5.2.jar
+          curl -fsSL -o tools/jars/guava.jar      $base/com/google/guava/guava/28.1-jre/guava-28.1-jre.jar
+          curl -fsSL -o tools/jars/failureaccess.jar $base/com/google/guava/failureaccess/1.0.1/failureaccess-1.0.1.jar
+          curl -fsSL -o tools/jars/jcommander.jar $base/com/beust/jcommander/1.78/jcommander-1.78.jar
+          curl -fsSL -o tools/jars/antlr.jar      $base/org/antlr/antlr-runtime/3.5.2/antlr-runtime-3.5.2.jar
+          ls -lh tools/jars
+
+      - name: Loader dex
+        run: |
+          set -e
+          CP=$(ls tools/jars/*.jar | tr '\n' ':')
+          java -cp "$CP" org.jf.smali.Main a tools/loader.smali -o build/classes8.dex
+          ls -lh build/classes8.dex
+
+      - name: Patch APK
+        run: |
+          set -e
+          VER=$(cat VERSION)
+          mkdir -p out
+          python3 tools/patch_apk.py \
+            --base /tmp/base.apk \
+            --lib build/librakcheat.so \
+            --loader-dex build/classes8.dex \
+            --tools tools/jars \
+            --out "out/RakCRMP-Cheat-${VER}.apk" \
+            --keystore keystore/rakcrmp.p12 --ks-pass rakcrmp123 --key-alias rakcrmp
+          ls -lh out
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: RakCRMP-Cheat-apk
+          path: out/*.apk
+          retention-days: 90
+
+      - name: Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          VER=$(cat VERSION)
+          TAG="v${VER}"
+          NOTES="RakCRMP Cheat ${VER} — оверлей поверх оригинального RakCRMP (com.br.top)."
+          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --title "RakCRMP Cheat ${VER}" --notes "$NOTES" --prerelease
+          gh release upload "$TAG" out/*.apk --clobber
+          gh release view "$TAG" --json assets -q '.assets[].name'

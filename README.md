@@ -1,1 +1,63 @@
-# RakCRMP-Cheat-BR
+# RakCRMP Cheat
+
+Оверлей-чит для оригинального лаунчера RakCRMP (`com.br.top`).
+
+* Без ключа и подписки — ничего не просит при запуске.
+* Красная перемещаемая кнопка **C**, по нажатию — серое меню в стиле жидкого стекла.
+* Работает внутри процесса игры: перехват RakNet, а не отдельное приложение.
+
+## Функции
+
+**Персонаж** — Бессмертие, авто-лечение, ускорение бега, запоминание точки и телепорт на неё.
+
+**Транспорт** — Бессмертие авто, ускорение, ремонт, телепорт.
+
+**Боты** — прохождение квестов дяди Славы: авто-диалоги с NPC (выбор кнопки по смыслу),
+приём звонков, прохождение мини-игр.
+
+**Отладка** — счётчики пакетов, состояние хуков, журнал.
+
+## Как это устроено
+
+```
+launcher.apk (оригинал)
+  + classes8.dex              rakcheat.Loader -> System.loadLibrary("rakcheat")
+  + classes4.dex (патч)       invoke-static {}, Lrakcheat/Loader;->load()V
+  + lib/arm64-v8a/librakcheat.so
+        eglSwapBuffers hook   -> GLES3-оверлей (кнопка, меню, стекло)
+        multiTouchEvent hook  -> ввод оверлея, игра не видит нажатий по меню
+        RakClient::Send       -> бессмертие/скорость/телепорт в исходящем sync
+        ProcessNetworkPacket  -> разбор входящего JSON (диалоги NPC, звонки, мини-игры)
+        JNILib.sendJsonData   -> ответы уходят родным транспортом игры
+```
+
+## Сборка
+
+Всё собирается в GitHub Actions (`.github/workflows/build.yml`):
+
+1. тянет базовый APK из релиза `base`;
+2. печёт атлас шрифта из `assets/Fonts/Roboto-Regular.ttf`;
+3. собирает `librakcheat.so` NDK-тулчейном;
+4. патчит dex через baksmali/smali;
+5. zipalign + apksigner;
+6. кладёт APK в артефакты и в релиз.
+
+Локальная сборка нативной части:
+
+```bash
+cmake -S native -B build \
+  -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK/build/cmake/android.toolchain.cmake \
+  -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM=android-24 -DANDROID_STL=c++_static
+cmake --build build -j
+```
+
+## Установка
+
+Ставится как обычный APK. Подпись отличается от официальной, поэтому старую версию
+нужно удалить. Данные аккаунта хранятся на сервере — вход по логину/паролю.
+
+Aрхитектура: arm64-v8a (все актуальные устройства).
+
+## Канал
+
+[@raknetbrnews1](https://t.me/raknetbrnews1)
