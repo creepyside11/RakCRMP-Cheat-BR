@@ -1,0 +1,50 @@
+name: inspect
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/inspect.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  dump:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Base APK
+        run: |
+          curl -fL -o /tmp/base.apk https://github.com/${{ github.repository }}/releases/download/base/launcher-base.apk
+      - name: Jars
+        run: |
+          mkdir -p tools/jars && base=https://repo1.maven.org/maven2
+          curl -fsSL -o tools/jars/baksmali.jar $base/org/smali/baksmali/2.5.2/baksmali-2.5.2.jar
+          curl -fsSL -o tools/jars/dexlib2.jar  $base/org/smali/dexlib2/2.5.2/dexlib2-2.5.2.jar
+          curl -fsSL -o tools/jars/util.jar     $base/org/smali/util/2.5.2/util-2.5.2.jar
+          curl -fsSL -o tools/jars/guava.jar    $base/com/google/guava/guava/28.1-jre/guava-28.1-jre.jar
+          curl -fsSL -o tools/jars/jcommander.jar $base/com/beust/jcommander/1.78/jcommander-1.78.jar
+          curl -fsSL -o tools/jars/failureaccess.jar $base/com/google/guava/failureaccess/1.0.1/failureaccess-1.0.1.jar
+      - name: Dump
+        run: |
+          cd /tmp && rm -rf apkx && mkdir apkx && cd apkx
+          unzip -q /tmp/base.apk 'classes*.dex'
+          CP=$(ls /home/runner/work/*/*/tools/jars/*.jar | tr '\n' ':')
+          echo "== loadLibrary site =="
+          mkdir -p s4 && java -cp "$CP" org.jf.baksmali.Main d classes4.dex -o s4 >/dev/null 2>&1
+          grep -rl 'blackrussia-client' s4 | head
+          grep -rh -B6 -A6 'blackrussia-client' s4 | head -40
+          echo "== multiTouchEvent callers =="
+          grep -rn 'multiTouchEvent' s4 | head -10
+          f=$(grep -rl 'multiTouchEvent' s4 | head -1)
+          echo "file: $f"
+          if [ -n "$f" ]; then grep -n -B25 'multiTouchEvent' "$f" | tail -80; fi
+          echo "== sendJsonData callers =="
+          grep -rn 'sendJsonData' s4 | head -10
+          echo "== deliverNetworkEvents =="
+          grep -rn 'deliverNetworkEvents' s4 | head -10

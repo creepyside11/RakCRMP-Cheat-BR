@@ -228,9 +228,25 @@ static float g_prev[3] = {0, 0, 0};
 static bool  g_havePrev = false;
 static bool  g_wasSpeed = false;
 
+static bool plausible_pos(float x, float y, float z) {
+    if (!(x == x) || !(y == y) || !(z == z)) return false;
+    if (fabsf(x) > 1e5f || fabsf(y) > 1e5f || fabsf(z) > 1e5f) return false;
+    return true;
+}
+
 static void apply_player_sync(char* d, int len) {
     if (len < 37) return;
     float px = rd_f(d + 7), py = rd_f(d + 11), pz = rd_f(d + 15);
+    if (!plausible_pos(px, py, pz)) {
+        static int warned = 0;
+        if (warned++ < 3) rc_log("sync 0x1E: позиция не похожа на позицию (len %d)", len);
+        return;
+    }
+    if ((unsigned char)d[35] > 100 || (unsigned char)d[36] > 100) {
+        static int warned2 = 0;
+        if (warned2++ < 3) rc_log("sync 0x1E: HP-байт вне 0..100 — патч выключен");
+        return;
+    }
     g_net.lastPos[0] = px; g_net.lastPos[1] = py; g_net.lastPos[2] = pz;
     g_net.lastHp = (float)(unsigned char)d[35];
 
