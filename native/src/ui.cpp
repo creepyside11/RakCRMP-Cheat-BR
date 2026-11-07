@@ -241,11 +241,11 @@ void draw(int w, int h, float dt) {
     // --- boot badge (first seconds only, so the overlay proves it's alive)
     if (startT == 0) startT = now;
     double el = now - startT;
-    if (el < 12.0) {
-        float ba = (float)(el > 9.0 ? (12.0 - el) / 3.0 : 1.0);
+    if (el < 30.0) {
+        float ba = (float)(el > 26.0 ? (30.0 - el) / 4.0 : 1.0);
         char b[96];
         fmt(b, sizeof(b), "RakCRMP Cheat %s  ·  хуки %d/%d", RC_VERSION, g_net.hooksOk, g_net.hooksFail);
-        rcgl::text(14 * S, 12 * S, b, 15 * S, RCColor(1, 1, 1, 0.55f * ba));
+        rcgl::text(16 * S, 14 * S, b, 18 * S, RCColor(1, 0.25f, 0.2f, 0.95f * ba));
     }
 
     // --- floating button
