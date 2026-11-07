@@ -113,6 +113,22 @@ jobs:
             --keystore keystore/rakcrmp.p12 --ks-pass rakcrmp123 --key-alias rakcrmp
           ls -lh out
 
+      - name: Verify package
+        run: |
+          set -e
+          APK=$(ls out/*.apk)
+          unzip -l "$APK" | grep -E 'classes8.dex|librakcheat.so' 
+          rm -rf /tmp/verify && mkdir -p /tmp/verify && cd /tmp/verify
+          unzip -q "$OLDPWD/$APK" classes8.dex lib/arm64-v8a/librakcheat.so 'classes*.dex'
+          file lib/arm64-v8a/librakcheat.so
+          strings lib/arm64-v8a/librakcheat.so | grep -c RakCRMP
+          strings classes8.dex | grep -i rakcheat
+          for d in classes*.dex; do
+            if strings "$d" | grep -q 'Lrakcheat/Loader;'; then echo "patched dex: $d"; fi
+          done
+          # the loader call must be present exactly in the dex that loads the game lib
+          apps=$(ls classes*.dex | wc -l); echo "dex files: $apps"
+
       - uses: actions/upload-artifact@v4
         with:
           name: RakCRMP-Cheat-apk

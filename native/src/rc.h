@@ -198,6 +198,7 @@ struct RcNetStats {
     float touchX     = 0;
     float touchY     = 0;
     int   touchAct   = -1;
+    int   rawTouch[8] = {0, 0, 0, 0, 0, 0, 0, 0};
     float lastPos[3] = {0, 0, 0};
 };
 extern RcNetStats g_net;
@@ -232,16 +233,24 @@ float lineHeight(float size);
 
 // ---------------------------------------------------------------- ui
 namespace rcui {
-struct Input { float x, y; int action; int id; };
+struct Input {
+    float x, y;      // primary pointer
+    float x2, y2;    // second pointer
+    float x3, y3;    // third pointer
+    int   action;    // 0 = down, 1 = up, 2 = move
+    int   id;
+};
 bool  onInput(const Input& in);
 void  draw(int w, int h, float dt);
 bool  wantsCapture();
 void  setScreen(int w, int h);
+float screenW();
+float screenH();
 }
 
 // ---------------------------------------------------------------- net
 namespace rcnet {
 void install();
-void setJni(JavaVM* vm, jclass cls, jmethodID mid);
+void setJni(JavaVM* vm, jclass cls, jmethodID deliver, jmethodID sendJson);
 void tick(double now);
 }

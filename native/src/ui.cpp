@@ -36,6 +36,7 @@ static double pressT = 0;
 static bool  menuOpen = false;
 static float anim = 0.f;
 static int   tab = 0;
+static int   activeSlot = 0;
 static int   activeSlider = -1;
 static bool  captured = false;
 static double lastFrame = 0;
@@ -80,6 +81,8 @@ static std::vector<Item> items() {
         v.push_back({IT_INFO, "last", nullptr, nullptr, 0, 0, 0});
         v.push_back({IT_INFO, "pos", nullptr, nullptr, 0, 0, 0});
         v.push_back({IT_INFO, "touch", nullptr, nullptr, 0, 0, 0});
+        v.push_back({IT_INFO, "raw0", nullptr, nullptr, 0, 0, 0});
+        v.push_back({IT_INFO, "raw1", nullptr, nullptr, 0, 0, 0});
         v.push_back({IT_INFO, "log0", nullptr, nullptr, 0, 0, 0});
         v.push_back({IT_INFO, "log1", nullptr, nullptr, 0, 0, 0});
         v.push_back({IT_INFO, "log2", nullptr, nullptr, 0, 0, 0});
@@ -111,6 +114,13 @@ static Geo geo() {
 }
 
 static float btnRadius() { return 31 * S; }
+
+static float slotX(const Input& in, int s) {
+    return s == 0 ? in.x : (s == 1 ? in.x2 : in.x3);
+}
+static float slotY(const Input& in, int s) {
+    return s == 0 ? in.y : (s == 1 ? in.y2 : in.y3);
+}
 
 // ------------------------------------------------------------------ draw
 static void drawSwitch(float x, float y, float w, float h, bool on, float a) {
@@ -164,6 +174,12 @@ static void drawInfo(const char* key, const Geo& g, float y, float a, int index)
             g_net.lastPos[2], g_net.lastHp);
     } else if (!strcmp(key, "touch")) {
         fmt(buf, sizeof(buf), "touch %.0f %.0f act %d", g_net.touchX, g_net.touchY, g_net.touchAct);
+    } else if (!strcmp(key, "raw0")) {
+        fmt(buf, sizeof(buf), "raw %d %d %d %d", g_net.rawTouch[0], g_net.rawTouch[1],
+            g_net.rawTouch[2], g_net.rawTouch[3]);
+    } else if (!strcmp(key, "raw1")) {
+        fmt(buf, sizeof(buf), "raw %d %d %d %d", g_net.rawTouch[4], g_net.rawTouch[5],
+            g_net.rawTouch[6], g_net.rawTouch[7]);
     } else {
         int idx = key[3] - '0';
         const char* l = rc_log_line(idx);
@@ -289,32 +305,47 @@ static void applyAction(int act) {
 
 bool onInput(const Input& in) {
     pthread_mutex_lock(&g_mtx);
-    W = W > 1 ? W : 1;
     S = H / 720.f; if (S < 0.75f) S = 0.75f;
 
     bool consumed = false;
-    float bx = btnNX * W, by = btnNY * H, br = btnRadius() + 10 * S;
 
     if (in.action == 0) {   // down
         pressT = rc_now();
         btnMoved = false;
-        float dx = in.x - bx, dy = in.y - by;
-        if (g_cfg.showButton && (dx * dx + dy * dy) <= br * br) {
-            btnDrag = true;
-            dragOffX = dx; dragOffY = dy;
-            consumed = true;
-        } else if (menuOpen && anim > 0.5f) {
+        activeSlot = 0;
+        float bx = btnNX * W, by = btnNY * H, br = btnRadius() + 10 * S;
+        bool hitBtn = false;
+        for (int s = 0; s < 3 && !hitBtn; s++) {
+            float dx = slotX(in, s) - bx, dy = slotY(in, s) - by;
+            if (g_cfg.showButton && (dx * dx + dy * dy) <= br * br) {
+                btnDrag = true;
+                dragOffX = dx; dragOffY = dy;
+                activeSlot = s;
+                hitBtn = true;
+                consumed = true;
+            }
+        }
+        if (!hitBtn && menuOpen && anim > 0.5f) {
             Geo g = geo();
-            // close button
-            if (in.x > g.px + g.pw - 44 * S && in.x < g.px + g.pw - 8 * S &&
-                in.y > g.py + 10 * S && in.y < g.py + 44 * S) {
-                menuOpen = false;
+            float ix = in.x, iy = in.y;
+            bool inside = (ix > g.px && ix < g.px + g.pw && iy > g.py && iy < g.py + g.ph);
+            for (int s = 1; s < 3 && !inside; s++) {
+                float sx = slotX(in, s), sy = slotY(in, s);
+                if (sx > g.px && sx < g.px + g.pw && sy > g.py && sy < g.py + g.ph) {
+                    ix = sx; iy = sy; inside = true; activeSlot = s;
+                }
+            }
+            if (inside) {
                 consumed = true;
-            } else if (in.x > g.px && in.x < g.px + g.pw && in.y > g.py && in.y < g.py + g.ph) {
-                consumed = true;
+                if (ix > g.px + g.pw - 46 * S && ix < g.px + g.pw - 6 * S &&
+                    iy > g.py + 8 * S && iy < g.py + 46 * S) {
+                    menuOpen = false;
+                    pthread_mutex_unlock(&g_mtx);
+                    return true;
+                }
                 for (int i = 0; i < 4; i++) {
                     float ty = g.py + 84 * S + i * 46 * S;
-                    if (in.y >= ty && in.y <= ty + 40 * S && in.x < g.px + 190 * S) {
+                    if (iy >= ty && iy <= ty + 40 * S && ix < g.px + 190 * S) {
                         tab = i;
                         activeSlider = -1;
                         pthread_mutex_unlock(&g_mtx);
@@ -327,10 +358,10 @@ bool onInput(const Input& in) {
                     const Item& it = its[i];
                     if (it.kind == IT_GAP) { y += 18 * S; continue; }
                     if (it.kind == IT_INFO) { y += 26 * S; continue; }
-                    if (in.y >= y - 6 * S && in.y <= y + g.rowH - 6 * S) {
+                    if (iy >= y - 6 * S && iy <= y + g.rowH - 6 * S) {
                         if (it.kind == IT_TOGGLE && it.b) {
                             *it.b = !*it.b;
-                            rc_log("toggle %s = %d", it.label, (int)*it.b);
+                            rc_log("%s = %s", it.label, *it.b ? "вкл" : "выкл");
                         } else if (it.kind == IT_SLIDER) {
                             activeSlider = (int)i;
                         } else if (it.kind == IT_BUTTON) {
@@ -344,10 +375,10 @@ bool onInput(const Input& in) {
         }
     } else if (in.action == 2) {   // move
         if (btnDrag) {
-            float nx = (in.x - dragOffX) / W;
-            float ny = (in.y - dragOffY) / H;
-            if (nx < 0.05f) nx = 0.05f; if (nx > 0.95f) nx = 0.95f;
-            if (ny < 0.05f) ny = 0.05f; if (ny > 0.95f) ny = 0.95f;
+            float nx = (slotX(in, activeSlot) - dragOffX) / W;
+            float ny = (slotY(in, activeSlot) - dragOffY) / H;
+            if (nx < 0.04f) nx = 0.04f; if (nx > 0.96f) nx = 0.96f;
+            if (ny < 0.04f) ny = 0.04f; if (ny > 0.96f) ny = 0.96f;
             if (fabsf(nx - btnNX) * W > 4 * S || fabsf(ny - btnNY) * H > 4 * S) btnMoved = true;
             btnNX = nx; btnNY = ny;
             consumed = true;
@@ -358,7 +389,7 @@ bool onInput(const Input& in) {
                 Item& it = its[activeSlider];
                 float x0 = g.cx + g.cw * 0.42f;
                 float x1 = x0 + g.cw * 0.44f;
-                float t = (in.x - x0) / (x1 - x0);
+                float t = (slotX(in, activeSlot) - x0) / (x1 - x0);
                 if (t < 0) t = 0; if (t > 1) t = 1;
                 if (it.f) *it.f = it.mn + (it.mx - it.mn) * t;
             }
@@ -367,7 +398,7 @@ bool onInput(const Input& in) {
     } else if (in.action == 1) {   // up
         if (btnDrag) {
             btnDrag = false;
-            if (!btnMoved && rc_now() - pressT < 0.45) {
+            if (!btnMoved && rc_now() - pressT < 0.5) {
                 menuOpen = !menuOpen;
                 rc_log("меню %s", menuOpen ? "открыто" : "закрыто");
             }
@@ -376,14 +407,25 @@ bool onInput(const Input& in) {
         if (activeSlider >= 0) { activeSlider = -1; consumed = true; }
     }
 
-    if (menuOpen && consumed) {
-        // keep game from reacting under the menu
-    }
     pthread_mutex_unlock(&g_mtx);
     return consumed;
 }
 
 bool wantsCapture() { return menuOpen || anim > 0.05f; }
+
+float screenW() {
+    pthread_mutex_lock(&g_mtx);
+    float v = W;
+    pthread_mutex_unlock(&g_mtx);
+    return v;
+}
+
+float screenH() {
+    pthread_mutex_lock(&g_mtx);
+    float v = H;
+    pthread_mutex_unlock(&g_mtx);
+    return v;
+}
 
 void setScreen(int w, int h) {
     pthread_mutex_lock(&g_mtx);

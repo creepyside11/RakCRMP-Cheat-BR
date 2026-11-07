@@ -40,7 +40,6 @@ static jmethodID g_sendJson = nullptr;
 
 static EGLBoolean (*origSwap)(EGLDisplay, EGLSurface) = nullptr;
 static rchook::Hook hSwap, hTouch;
-static void* g_touchOrig = nullptr;
 static int   g_frameCount = 0;
 
 static void* g_gameHandle = nullptr;
@@ -74,6 +73,12 @@ static EGLBoolean det_swap(EGLDisplay dpy, EGLSurface surf) {
 }
 
 // ---------------------------------------------------------------- touch hook
+static void map_pair(float& x, float& y) {
+    float sw = rcui::screenW(), sh = rcui::screenH();
+    if (sw < 2 || sh < 2) return;
+    if (x >= -0.001f && x <= 1.001f && y >= -0.001f && y <= 1.001f) { x *= sw; y *= sh; }
+}
+
 static void jni_multiTouch(JNIEnv* env, jobject thiz, jint a0, jint a1, jint a2, jint a3,
                             jint a4, jint a5, jint a6, jint a7) {
     int action = (int)a0 & 0xff;
@@ -82,13 +87,19 @@ static void jni_multiTouch(JNIEnv* env, jobject thiz, jint a0, jint a1, jint a2,
     else if (action == 1 || action == 6 || action == 3) mapped = 1;
     else mapped = 2;
 
+    jint raw[8] = {a0, a1, a2, a3, a4, a5, a6, a7};
+    for (int i = 0; i < 8; i++) g_net.rawTouch[i] = (int)raw[i];
     g_net.touchX = (float)a2;
     g_net.touchY = (float)a3;
     g_net.touchAct = action;
 
     rcui::Input in;
-    in.x = (float)a2;
-    in.y = (float)a3;
+    in.x = (float)a2;  in.y = (float)a3;
+    in.x2 = (float)a4; in.y2 = (float)a5;
+    in.x3 = (float)a6; in.y3 = (float)a7;
+    map_pair(in.x, in.y);
+    map_pair(in.x2, in.y2);
+    map_pair(in.x3, in.y3);
     in.action = mapped;
     in.id = (int)a1;
 
@@ -163,17 +174,18 @@ extern "C" jint JNI_OnLoad(JavaVM* vm, void*) {
     if (vm->GetEnv((void**)&env, JNI_VERSION_1_6) != JNI_OK) return JNI_ERR;
 
     jclass cls = env->FindClass("com/blackhub/bronline/game/core/JNILib");
+    jmethodID deliver = nullptr;
+    jmethodID sendJson = nullptr;
     if (cls) {
         g_jniLib = (jclass)env->NewGlobalRef(cls);
-        g_sendJson = env->GetStaticMethodID(cls, "sendJsonData", "(I[B)V");
-        if (g_sendJson)
-            rc_log("JNILib.sendJsonData найден");
-        else
-            rc_log("JNILib.sendJsonData не найден");
+        deliver = env->GetStaticMethodID(cls, "deliverNetworkEvents", "(I[B)V");
+        sendJson = env->GetStaticMethodID(cls, "sendJsonData", "(I[B)V");
+        rc_log("JNI: deliver=%p sendJson=%p", (void*)deliver, (void*)sendJson);
+        if (env->ExceptionCheck()) env->ExceptionClear();
     } else {
         rc_log("JNILib не найден");
     }
-    rcnet::setJni(vm, g_jniLib, g_sendJson);
+    rcnet::setJni(vm, g_jniLib, deliver, sendJson);
 
     pthread_t th;
     pthread_create(&th, nullptr, init_thread, nullptr);

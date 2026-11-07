@@ -19,6 +19,7 @@ static ProcFn origProc = nullptr;
 
 static JavaVM* g_vm = nullptr;
 static jclass  g_jniLib = nullptr;
+static jmethodID g_midDeliver = nullptr;
 static jmethodID g_midSendJson = nullptr;
 
 static pthread_mutex_t g_pend = PTHREAD_MUTEX_INITIALIZER;
@@ -29,14 +30,16 @@ static std::vector<Pending> g_queue;
 static inline float rd_f(const char* p) { float v; memcpy(&v, p, 4); return v; }
 static inline void wr_f(char* p, float v) { memcpy(p, &v, 4); }
 
-void setJni(JavaVM* vm, jclass cls, jmethodID mid) {
+void setJni(JavaVM* vm, jclass cls, jmethodID deliver, jmethodID sendJson) {
     g_vm = vm;
     g_jniLib = cls;
-    g_midSendJson = mid;
+    g_midDeliver = deliver;
+    g_midSendJson = sendJson;
 }
 
 static void sendJson(int iid, const char* json) {
-    if (!g_vm || !g_jniLib || !g_midSendJson) { rc_log("sendJson: JNI не готов"); return; }
+    jmethodID mid = g_midDeliver ? g_midDeliver : g_midSendJson;
+    if (!g_vm || !g_jniLib || !mid) { rc_log("sendJson: JNI не готов"); return; }
     JNIEnv* env = nullptr;
     bool attached = false;
     if (g_vm->GetEnv((void**)&env, JNI_VERSION_1_6) != JNI_OK) {
@@ -47,7 +50,8 @@ static void sendJson(int iid, const char* json) {
     jbyteArray arr = env->NewByteArray(n);
     if (arr) {
         env->SetByteArrayRegion(arr, 0, n, (const jbyte*)(json));
-        env->CallStaticVoidMethod(g_jniLib, g_midSendJson, (jint)iid, arr);
+        env->CallStaticVoidMethod(g_jniLib, mid, (jint)iid, arr);
+        if (env->ExceptionCheck()) { env->ExceptionClear(); rc_log("sendJson: Java-исключение"); }
         env->DeleteLocalRef(arr);
         g_net.jsonOut++;
     }
@@ -378,5 +382,3 @@ void tick(double now) {
 
 } // namespace rcnet
 
-// re-export JNI registration for main.cpp
-void rcnet_set_jni(JavaVM* vm, jclass cls, jmethodID mid) { rcnet::setJni(vm, cls, mid); }

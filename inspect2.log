@@ -1,0 +1,449 @@
+﻿2026-11-07T20:39:27.3303825Z Current runner version: '2.338.2'
+2026-11-07T20:39:27.3330143Z ##[group]Runner Image Provisioner
+2026-11-07T20:39:27.3331070Z Hosted Compute Agent
+2026-11-07T20:39:27.3331838Z Version: 20261028.624
+2026-11-07T20:39:27.3332522Z Commit: 54898b74c23fde5556c9b3c3a2290865feef0dfe
+2026-11-07T20:39:27.3333367Z Build Date: 2026-10-28T21:51:42Z
+2026-11-07T20:39:27.3334075Z Worker ID: {e196a7d0-878e-46f4-b589-08215e27781d}
+2026-11-07T20:39:27.3334773Z Region: eastus
+2026-11-07T20:39:27.3335395Z Cloud: Azure
+2026-11-07T20:39:27.3335971Z ##[endgroup]
+2026-11-07T20:39:27.3338078Z ##[group]Operating System
+2026-11-07T20:39:27.3338797Z Ubuntu
+2026-11-07T20:39:27.3339343Z 24.04.5
+2026-11-07T20:39:27.3339968Z LTS
+2026-11-07T20:39:27.3340532Z ##[endgroup]
+2026-11-07T20:39:27.3341111Z ##[group]Runner Image
+2026-11-07T20:39:27.3341755Z Image: ubuntu-24.04
+2026-11-07T20:39:27.3342333Z Version: 20261101.360.1
+2026-11-07T20:39:27.3343711Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20261101.360/images/ubuntu/Ubuntu2404-Readme.md
+2026-11-07T20:39:27.3345357Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20261101.360
+2026-11-07T20:39:27.3346386Z ##[endgroup]
+2026-11-07T20:39:27.3348253Z ##[group]GITHUB_TOKEN Permissions
+2026-11-07T20:39:27.3350748Z Contents: read
+2026-11-07T20:39:27.3351487Z Metadata: read
+2026-11-07T20:39:27.3352179Z ##[endgroup]
+2026-11-07T20:39:27.3354432Z Secret source: Actions
+2026-11-07T20:39:27.3355566Z Cache mode: write
+2026-11-07T20:39:27.3356845Z Prepare workflow directory
+2026-11-07T20:39:27.3707738Z Prepare all required actions
+2026-11-07T20:39:27.3758123Z Getting action download info
+2026-11-07T20:39:27.5994280Z Download action repository 'actions/checkout@v4' (SHA:11d5960a326750d5838078e36cf38b85af677262)
+2026-11-07T20:39:27.6856817Z Download action repository 'actions/setup-java@v4' (SHA:cf277c60eb25467037889841efdb72551f06f6c3)
+2026-11-07T20:39:28.0322089Z Complete job name: dump
+2026-11-07T20:39:28.1222054Z ##[group]Run actions/checkout@v4
+2026-11-07T20:39:28.1222977Z with:
+2026-11-07T20:39:28.1223456Z   repository: creepyside11/RakCRMP-Cheat-BR
+2026-11-07T20:39:28.1227384Z   token: ***
+2026-11-07T20:39:28.1227841Z   ssh-strict: true
+2026-11-07T20:39:28.1228280Z   ssh-user: git
+2026-11-07T20:39:28.1228720Z   persist-credentials: true
+2026-11-07T20:39:28.1229206Z   clean: true
+2026-11-07T20:39:28.1229644Z   sparse-checkout-cone-mode: true
+2026-11-07T20:39:28.1230163Z   fetch-depth: 1
+2026-11-07T20:39:28.1230594Z   fetch-tags: false
+2026-11-07T20:39:28.1231035Z   show-progress: true
+2026-11-07T20:39:28.1231477Z   lfs: false
+2026-11-07T20:39:28.1231886Z   submodules: false
+2026-11-07T20:39:28.1232336Z   set-safe-directory: true
+2026-11-07T20:39:28.1232862Z   allow-unsafe-pr-checkout: false
+2026-11-07T20:39:28.1233720Z ##[endgroup]
+2026-11-07T20:39:28.3908798Z Syncing repository: creepyside11/RakCRMP-Cheat-BR
+2026-11-07T20:39:28.3911096Z ##[group]Getting Git version info
+2026-11-07T20:39:28.3912153Z Working directory is '/home/runner/work/RakCRMP-Cheat-BR/RakCRMP-Cheat-BR'
+2026-11-07T20:39:28.3913485Z [command]/usr/bin/git version
+2026-11-07T20:39:28.4006223Z git version 2.56.0
+2026-11-07T20:39:28.4031529Z ##[endgroup]
+2026-11-07T20:39:28.4050399Z Temporarily overriding HOME='/home/runner/work/_temp/4bedec1a-3115-4556-8586-9f42f7fdcdd6' before making global git config changes
+2026-11-07T20:39:28.4053438Z Adding repository directory to the temporary git global config as a safe directory
+2026-11-07T20:39:28.4058957Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/RakCRMP-Cheat-BR/RakCRMP-Cheat-BR
+2026-11-07T20:39:28.4143899Z Deleting the contents of '/home/runner/work/RakCRMP-Cheat-BR/RakCRMP-Cheat-BR'
+2026-11-07T20:39:28.4151094Z ##[group]Initializing the repository
+2026-11-07T20:39:28.4158392Z [command]/usr/bin/git init /home/runner/work/RakCRMP-Cheat-BR/RakCRMP-Cheat-BR
+2026-11-07T20:39:28.4274023Z hint: Using 'master' as the name for the initial branch. This default branch name
+2026-11-07T20:39:28.4277122Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2026-11-07T20:39:28.4280117Z hint: to use in all of your new repositories, which will suppress this warning,
+2026-11-07T20:39:28.4287003Z hint: call:
+2026-11-07T20:39:28.4287949Z hint:
+2026-11-07T20:39:28.4289010Z hint: 	git config --global init.defaultBranch <name>
+2026-11-07T20:39:28.4290235Z hint:
+2026-11-07T20:39:28.4291405Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2026-11-07T20:39:28.4293307Z hint: 'development'. The just-created branch can be renamed via this command:
+2026-11-07T20:39:28.4294953Z hint:
+2026-11-07T20:39:28.4296290Z hint: 	git branch -m <name>
+2026-11-07T20:39:28.4297758Z hint:
+2026-11-07T20:39:28.4299304Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2026-11-07T20:39:28.4301900Z Initialized empty Git repository in /home/runner/work/RakCRMP-Cheat-BR/RakCRMP-Cheat-BR/.git/
+2026-11-07T20:39:28.4320311Z [command]/usr/bin/git remote add origin https://github.com/creepyside11/RakCRMP-Cheat-BR
+2026-11-07T20:39:28.4389621Z ##[endgroup]
+2026-11-07T20:39:28.4391360Z ##[group]Disabling automatic garbage collection
+2026-11-07T20:39:28.4399595Z [command]/usr/bin/git config --local gc.auto 0
+2026-11-07T20:39:28.4458228Z ##[endgroup]
+2026-11-07T20:39:28.4459878Z ##[group]Setting up auth
+2026-11-07T20:39:28.4467577Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-11-07T20:39:28.4513820Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-11-07T20:39:28.4943050Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-11-07T20:39:28.4993998Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-11-07T20:39:28.5247313Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-11-07T20:39:28.5293051Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-11-07T20:39:28.5543307Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-11-07T20:39:28.5597993Z ##[endgroup]
+2026-11-07T20:39:28.5599510Z ##[group]Fetching the repository
+2026-11-07T20:39:28.5611231Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +6cc5b736af81747c24d60e64e0d3f03d16453b77:refs/remotes/origin/main
+2026-11-07T20:39:28.7460708Z From https://github.com/creepyside11/RakCRMP-Cheat-BR
+2026-11-07T20:39:28.7463824Z  * [new ref]         6cc5b736af81747c24d60e64e0d3f03d16453b77 -> origin/main
+2026-11-07T20:39:28.7470626Z ##[endgroup]
+2026-11-07T20:39:28.7473700Z ##[group]Determining the checkout info
+2026-11-07T20:39:28.7476835Z ##[endgroup]
+2026-11-07T20:39:28.7478880Z [command]/usr/bin/git sparse-checkout disable
+2026-11-07T20:39:28.7541159Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+2026-11-07T20:39:28.7582857Z ##[group]Checking out the ref
+2026-11-07T20:39:28.7599508Z [command]/usr/bin/git checkout --progress --force -B main refs/remotes/origin/main
+2026-11-07T20:39:28.7681871Z Switched to a new branch 'main'
+2026-11-07T20:39:28.7687341Z branch 'main' set up to track 'origin/main'.
+2026-11-07T20:39:28.7695219Z ##[endgroup]
+2026-11-07T20:39:28.7746179Z [command]/usr/bin/git log -1 --format=%H
+2026-11-07T20:39:28.7782640Z 6cc5b736af81747c24d60e64e0d3f03d16453b77
+2026-11-07T20:39:28.8258701Z ##[group]Run actions/setup-java@v4
+2026-11-07T20:39:28.8259916Z with:
+2026-11-07T20:39:28.8260801Z   distribution: temurin
+2026-11-07T20:39:28.8261819Z   java-version: 17
+2026-11-07T20:39:28.8262783Z   java-package: jdk
+2026-11-07T20:39:28.8263752Z   check-latest: false
+2026-11-07T20:39:28.8264733Z   server-id: github
+2026-11-07T20:39:28.8265952Z   server-username: GITHUB_ACTOR
+2026-11-07T20:39:28.8267307Z   server-password: GITHUB_TOKEN
+2026-11-07T20:39:28.8268462Z   overwrite-settings: true
+2026-11-07T20:39:28.8269536Z   job-status: success
+2026-11-07T20:39:28.8279161Z   token: ***
+2026-11-07T20:39:28.8280071Z ##[endgroup]
+2026-11-07T20:39:29.0148403Z ##[warning]setup-java v4 is deprecated and will no longer receive updates. Please migrate to actions/setup-java@v5.
+2026-11-07T20:39:29.0159737Z ##[group]Installed distributions
+2026-11-07T20:39:29.0257048Z (node:2304) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-11-07T20:39:29.0260593Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-11-07T20:39:29.0266140Z Resolved Java 17.0.21+9 from tool-cache
+2026-11-07T20:39:29.0267723Z Setting Java 17.0.21+9 as the default
+2026-11-07T20:39:29.0269154Z Creating toolchains.xml for JDK version 17 from temurin
+2026-11-07T20:39:29.0299548Z Writing to /home/runner/.m2/toolchains.xml
+2026-11-07T20:39:29.0301117Z 
+2026-11-07T20:39:29.0301829Z Java configuration:
+2026-11-07T20:39:29.0303448Z   Distribution: temurin
+2026-11-07T20:39:29.0305111Z   Version: 17.0.21+9
+2026-11-07T20:39:29.0307288Z   Path: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.21-9/x64
+2026-11-07T20:39:29.0309158Z 
+2026-11-07T20:39:29.0310249Z ##[endgroup]
+2026-11-07T20:39:29.0325361Z Creating settings.xml with server-id: github
+2026-11-07T20:39:29.0382381Z Writing to /home/runner/.m2/settings.xml
+2026-11-07T20:39:29.0659671Z ##[group]Run curl -fL -o /tmp/base.apk https://github.com/creepyside11/RakCRMP-Cheat-BR/releases/download/base/launcher-base.apk
+2026-11-07T20:39:29.0663507Z [36;1mcurl -fL -o /tmp/base.apk https://github.com/creepyside11/RakCRMP-Cheat-BR/releases/download/base/launcher-base.apk[0m
+2026-11-07T20:39:29.0699226Z shell: /usr/bin/bash -e {0}
+2026-11-07T20:39:29.0700356Z env:
+2026-11-07T20:39:29.0701675Z   JAVA_HOME: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.21-9/x64
+2026-11-07T20:39:29.0703962Z   JAVA_HOME_17_X64: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.21-9/x64
+2026-11-07T20:39:29.0707010Z ##[endgroup]
+2026-11-07T20:39:29.0941012Z   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+2026-11-07T20:39:29.0943660Z                                  Dload  Upload   Total   Spent    Left  Speed
+2026-11-07T20:39:29.2010673Z 
+2026-11-07T20:39:29.2012431Z   0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+2026-11-07T20:39:29.2016207Z   0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+2026-11-07T20:39:29.5998770Z 
+2026-11-07T20:39:29.7628195Z  61  112M   61 70.0M    0     0   138M      0 --:--:-- --:--:-- --:--:--  138M
+2026-11-07T20:39:29.7631505Z 100  112M  100  112M    0     0   168M      0 --:--:-- --:--:-- --:--:--  265M
+2026-11-07T20:39:29.7746932Z ##[group]Run mkdir -p tools/jars && base=https://repo1.maven.org/maven2
+2026-11-07T20:39:29.7748979Z [36;1mmkdir -p tools/jars && base=https://repo1.maven.org/maven2[0m
+2026-11-07T20:39:29.7751182Z [36;1mcurl -fsSL -o tools/jars/baksmali.jar $base/org/smali/baksmali/2.5.2/baksmali-2.5.2.jar[0m
+2026-11-07T20:39:29.7753675Z [36;1mcurl -fsSL -o tools/jars/dexlib2.jar  $base/org/smali/dexlib2/2.5.2/dexlib2-2.5.2.jar[0m
+2026-11-07T20:39:29.7756014Z [36;1mcurl -fsSL -o tools/jars/util.jar     $base/org/smali/util/2.5.2/util-2.5.2.jar[0m
+2026-11-07T20:39:29.7758756Z [36;1mcurl -fsSL -o tools/jars/guava.jar    $base/com/google/guava/guava/28.1-jre/guava-28.1-jre.jar[0m
+2026-11-07T20:39:29.7761421Z [36;1mcurl -fsSL -o tools/jars/jcommander.jar $base/com/beust/jcommander/1.78/jcommander-1.78.jar[0m
+2026-11-07T20:39:29.7764335Z [36;1mcurl -fsSL -o tools/jars/failureaccess.jar $base/com/google/guava/failureaccess/1.0.1/failureaccess-1.0.1.jar[0m
+2026-11-07T20:39:29.7787705Z shell: /usr/bin/bash -e {0}
+2026-11-07T20:39:29.7788717Z env:
+2026-11-07T20:39:29.7789948Z   JAVA_HOME: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.21-9/x64
+2026-11-07T20:39:29.7792107Z   JAVA_HOME_17_X64: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.21-9/x64
+2026-11-07T20:39:29.7793687Z ##[endgroup]
+2026-11-07T20:39:30.1417417Z ##[group]Run cd /tmp && rm -rf apkx && mkdir apkx && cd apkx
+2026-11-07T20:39:30.1419031Z [36;1mcd /tmp && rm -rf apkx && mkdir apkx && cd apkx[0m
+2026-11-07T20:39:30.1420422Z [36;1munzip -q /tmp/base.apk 'classes*.dex'[0m
+2026-11-07T20:39:30.1421918Z [36;1mCP=$(ls /home/runner/work/*/*/tools/jars/*.jar | tr '\n' ':')[0m
+2026-11-07T20:39:30.1423916Z [36;1mmkdir -p s4 && java -cp "$CP" org.jf.baksmali.Main d classes4.dex -o s4 >/dev/null 2>&1[0m
+2026-11-07T20:39:30.1425730Z [36;1mecho "===== JNILib.smali 30-95 ====="[0m
+2026-11-07T20:39:30.1427553Z [36;1msed -n '30,95p' s4/com/blackhub/bronline/game/core/JNILib.smali[0m
+2026-11-07T20:39:30.1429207Z [36;1mecho "===== JNIGLSurfaceView around touch ====="[0m
+2026-11-07T20:39:30.1431149Z [36;1mgrep -n '.method' s4/com/blackhub/bronline/game/core/JNIGLSurfaceView.smali | head -40[0m
+2026-11-07T20:39:30.1433453Z [36;1msed -n '120,200p' s4/com/blackhub/bronline/game/core/JNIGLSurfaceView.smali[0m
+2026-11-07T20:39:30.1435232Z [36;1mecho "===== JNIActivity around touch ====="[0m
+2026-11-07T20:39:30.1437110Z [36;1msed -n '120,180p' s4/com/blackhub/bronline/game/core/JNIActivity.smali[0m
+2026-11-07T20:39:30.1438793Z [36;1mecho "===== GUIManager.sendJsonData ====="[0m
+2026-11-07T20:39:30.1441270Z [36;1mawk '/\.method public sendJsonData\(I, Lorg\/json\/JSONObject;\)V/,/^\.end method/' s4/com/blackhub/bronline/game/GUIManager.smali | head -60[0m
+2026-11-07T20:39:30.1443824Z [36;1mecho "===== who calls deliverNetworkEvents ====="[0m
+2026-11-07T20:39:30.1445269Z [36;1mgrep -rn 'deliverNetworkEvents' s4 | head[0m
+2026-11-07T20:39:30.1467997Z shell: /usr/bin/bash -e {0}
+2026-11-07T20:39:30.1468968Z env:
+2026-11-07T20:39:30.1470134Z   JAVA_HOME: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.21-9/x64
+2026-11-07T20:39:30.1472086Z   JAVA_HOME_17_X64: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.21-9/x64
+2026-11-07T20:39:30.1473619Z ##[endgroup]
+2026-11-07T20:39:36.2154413Z ===== JNILib.smali 30-95 =====
+2026-11-07T20:39:36.2169552Z .end method
+2026-11-07T20:39:36.2169990Z 
+2026-11-07T20:39:36.2170298Z .method public static native cancelUpdateFlow()V
+2026-11-07T20:39:36.2171137Z .end method
+2026-11-07T20:39:36.2171398Z 
+2026-11-07T20:39:36.2171684Z .method public static native checkResourcesSubscribe()I
+2026-11-07T20:39:36.2172057Z .end method
+2026-11-07T20:39:36.2172176Z 
+2026-11-07T20:39:36.2172320Z .method public static native confirmUpdate()V
+2026-11-07T20:39:36.2172675Z .end method
+2026-11-07T20:39:36.2172796Z 
+2026-11-07T20:39:36.2172948Z .method public static native declineUpdate()V
+2026-11-07T20:39:36.2173381Z .end method
+2026-11-07T20:39:36.2173616Z 
+2026-11-07T20:39:36.2173950Z .method public static deliverJson(ILorg/json/JSONObject;)V
+2026-11-07T20:39:36.2174558Z     .registers 3
+2026-11-07T20:39:36.2175051Z     .annotation system Ldalvik/annotation/MethodParameters;
+2026-11-07T20:39:36.2175698Z         accessFlags = {
+2026-11-07T20:39:36.2176148Z             0x0,
+2026-11-07T20:39:36.2176802Z             0x0
+2026-11-07T20:39:36.2177161Z         }
+2026-11-07T20:39:36.2177438Z         names = {
+2026-11-07T20:39:36.2177728Z             "guiid",
+2026-11-07T20:39:36.2178082Z             "json"
+2026-11-07T20:39:36.2178415Z         }
+2026-11-07T20:39:36.2178729Z     .end annotation
+2026-11-07T20:39:36.2178965Z 
+2026-11-07T20:39:36.2179130Z     .line 84
+2026-11-07T20:39:36.2179839Z     invoke-virtual {p1}, Lorg/json/JSONObject;->toString()Ljava/lang/String;
+2026-11-07T20:39:36.2180464Z 
+2026-11-07T20:39:36.2180724Z     move-result-object p1
+2026-11-07T20:39:36.2181001Z 
+2026-11-07T20:39:36.2181490Z     sget-object v0, Ljava/nio/charset/StandardCharsets;->UTF_8:Ljava/nio/charset/Charset;
+2026-11-07T20:39:36.2182142Z 
+2026-11-07T20:39:36.2182580Z     invoke-virtual {p1, v0}, Ljava/lang/String;->getBytes(Ljava/nio/charset/Charset;)[B
+2026-11-07T20:39:36.2183639Z 
+2026-11-07T20:39:36.2183814Z     move-result-object p1
+2026-11-07T20:39:36.2184105Z 
+2026-11-07T20:39:36.2184935Z     invoke-static {p0, p1}, Lcom/blackhub/bronline/game/core/JNILib;->deliverNetworkEvents(I[B)V
+2026-11-07T20:39:36.2185680Z 
+2026-11-07T20:39:36.2185856Z     return-void
+2026-11-07T20:39:36.2186276Z .end method
+2026-11-07T20:39:36.2186729Z 
+2026-11-07T20:39:36.2187046Z .method public static native deliverNetworkEvents(I[B)V
+2026-11-07T20:39:36.2187794Z     .annotation system Ldalvik/annotation/MethodParameters;
+2026-11-07T20:39:36.2188391Z         accessFlags = {
+2026-11-07T20:39:36.2188774Z             0x0,
+2026-11-07T20:39:36.2189118Z             0x0
+2026-11-07T20:39:36.2189446Z         }
+2026-11-07T20:39:36.2189762Z         names = {
+2026-11-07T20:39:36.2190116Z             "guiid",
+2026-11-07T20:39:36.2190460Z             "data"
+2026-11-07T20:39:36.2190802Z         }
+2026-11-07T20:39:36.2191138Z     .end annotation
+2026-11-07T20:39:36.2191502Z .end method
+2026-11-07T20:39:36.2191741Z 
+2026-11-07T20:39:36.2192172Z .method public static native getAdditionDownloadPatchData()Ljava/lang/String;
+2026-11-07T20:39:36.2192902Z .end method
+2026-11-07T20:39:36.2193112Z 
+2026-11-07T20:39:36.2193492Z .method public static native getBitmapFromAssetsAsync(Ljava/lang/String;)V
+2026-11-07T20:39:36.2194063Z     .annotation system Ldalvik/annotation/MethodParameters;
+2026-11-07T20:39:36.2194418Z         accessFlags = {
+2026-11-07T20:39:36.2194640Z             0x0
+2026-11-07T20:39:36.2194886Z         }
+2026-11-07T20:39:36.2195077Z         names = {
+2026-11-07T20:39:36.2195399Z             "name"
+2026-11-07T20:39:36.2195818Z ===== JNIGLSurfaceView around touch =====
+2026-11-07T20:39:36.2196334Z 79:# direct methods
+2026-11-07T20:39:36.2197163Z 80:.method public static synthetic $r8$lambda$KNUyvQhfICa97gDVnGwlAp6j0_s()V
+2026-11-07T20:39:36.2197861Z 87:.end method
+2026-11-07T20:39:36.2198526Z 89:.method public static synthetic $r8$lambda$aWcnnSo9XwYO9kFWHM4zL6GthxA(IIIIIIII)V
+2026-11-07T20:39:36.2199028Z 96:.end method
+2026-11-07T20:39:36.2199358Z 98:.method public static synthetic $r8$lambda$rUFaIkqVJVuT_yA3_yIKqcgJVHs()V
+2026-11-07T20:39:36.2199741Z 105:.end method
+2026-11-07T20:39:36.2199978Z 107:.method static constructor <clinit>()V
+2026-11-07T20:39:36.2200255Z 112:.end method
+2026-11-07T20:39:36.2200808Z 114:.method public constructor <init>(Landroid/app/Activity;Lcom/blackhub/bronline/launcher/viewmodel/MainActivityViewModel;)V
+2026-11-07T20:39:36.2201400Z 164:.end method
+2026-11-07T20:39:36.2201668Z 166:.method private static final onPause$lambda$4()V
+2026-11-07T20:39:36.2202009Z 173:.end method
+2026-11-07T20:39:36.2202317Z 175:.method private static final onResume$lambda$3()V
+2026-11-07T20:39:36.2202624Z 182:.end method
+2026-11-07T20:39:36.2202922Z 184:.method private static final onTouchEvent$lambda$2(IIIIIIII)V
+2026-11-07T20:39:36.2203275Z 191:.end method
+2026-11-07T20:39:36.2203480Z 194:# virtual methods
+2026-11-07T20:39:36.2203715Z 195:.method public onPause()V
+2026-11-07T20:39:36.2203952Z 211:.end method
+2026-11-07T20:39:36.2204199Z 213:.method public onResume()V
+2026-11-07T20:39:36.2204438Z 232:.end method
+2026-11-07T20:39:36.2204732Z 234:.method public onTouchEvent(Landroid/view/MotionEvent;)Z
+2026-11-07T20:39:36.2205063Z 373:.end method
+2026-11-07T20:39:36.2205365Z 375:.method public surfaceChanged(Landroid/view/SurfaceHolder;III)V
+2026-11-07T20:39:36.2205718Z 408:.end method
+2026-11-07T20:39:36.2206003Z 410:.method public surfaceCreated(Landroid/view/SurfaceHolder;)V
+2026-11-07T20:39:36.2206357Z 425:.end method
+2026-11-07T20:39:36.2206991Z 427:.method public surfaceDestroyed(Landroid/view/SurfaceHolder;)V
+2026-11-07T20:39:36.2207371Z 451:.end method
+2026-11-07T20:39:36.2209270Z     .param p2    # Lcom/blackhub/bronline/launcher/viewmodel/MainActivityViewModel;
+2026-11-07T20:39:36.2210135Z         .annotation build Lorg/jetbrains/annotations/Nullable;
+2026-11-07T20:39:36.2210650Z         .end annotation
+2026-11-07T20:39:36.2210882Z     .end param
+2026-11-07T20:39:36.2211022Z 
+2026-11-07T20:39:36.2211490Z     .line 13
+2026-11-07T20:39:36.2212192Z     invoke-direct {p0, p1}, Landroid/opengl/GLSurfaceView;-><init>(Landroid/content/Context;)V
+2026-11-07T20:39:36.2212655Z 
+2026-11-07T20:39:36.2212897Z     const/4 v0, 0x3
+2026-11-07T20:39:36.2213056Z 
+2026-11-07T20:39:36.2213141Z     .line 25
+2026-11-07T20:39:36.2213558Z     invoke-virtual {p0, v0}, Landroid/opengl/GLSurfaceView;->setEGLContextClientVersion(I)V
+2026-11-07T20:39:36.2213929Z 
+2026-11-07T20:39:36.2214027Z     if-eqz p1, :cond_f
+2026-11-07T20:39:36.2214171Z 
+2026-11-07T20:39:36.2214259Z     .line 26
+2026-11-07T20:39:36.2214578Z     new-instance v0, Lcom/blackhub/bronline/game/core/JNIConfigChooser;
+2026-11-07T20:39:36.2214888Z 
+2026-11-07T20:39:36.2215244Z     invoke-direct {v0, p1}, Lcom/blackhub/bronline/game/core/JNIConfigChooser;-><init>(Landroid/content/Context;)V
+2026-11-07T20:39:36.2215688Z 
+2026-11-07T20:39:36.2215775Z     goto :goto_10
+2026-11-07T20:39:36.2215907Z 
+2026-11-07T20:39:36.2215989Z     :cond_f
+2026-11-07T20:39:36.2216198Z     const/4 v0, 0x0
+2026-11-07T20:39:36.2216326Z 
+2026-11-07T20:39:36.2216413Z     :goto_10
+2026-11-07T20:39:36.2217404Z     invoke-virtual {p0, v0}, Landroid/opengl/GLSurfaceView;->setEGLConfigChooser(Landroid/opengl/GLSurfaceView$EGLConfigChooser;)V
+2026-11-07T20:39:36.2217919Z 
+2026-11-07T20:39:36.2218062Z     if-eqz p1, :cond_1d
+2026-11-07T20:39:36.2218213Z 
+2026-11-07T20:39:36.2218294Z     .line 27
+2026-11-07T20:39:36.2218597Z     new-instance v0, Lcom/blackhub/bronline/game/core/JNIRenderer;
+2026-11-07T20:39:36.2218875Z 
+2026-11-07T20:39:36.2219450Z     invoke-direct {v0, p2, p1}, Lcom/blackhub/bronline/game/core/JNIRenderer;-><init>(Lcom/blackhub/bronline/launcher/viewmodel/MainActivityViewModel;Landroid/app/Activity;)V
+2026-11-07T20:39:36.2220093Z 
+2026-11-07T20:39:36.2220448Z     invoke-virtual {p0, v0}, Landroid/opengl/GLSurfaceView;->setRenderer(Landroid/opengl/GLSurfaceView$Renderer;)V
+2026-11-07T20:39:36.2220882Z 
+2026-11-07T20:39:36.2220973Z     :cond_1d
+2026-11-07T20:39:36.2221173Z     const/4 p1, 0x1
+2026-11-07T20:39:36.2221318Z 
+2026-11-07T20:39:36.2221397Z     .line 29
+2026-11-07T20:39:36.2221928Z     invoke-virtual {p0, p1}, Landroid/opengl/GLSurfaceView;->setPreserveEGLContextOnPause(Z)V
+2026-11-07T20:39:36.2222329Z 
+2026-11-07T20:39:36.2222418Z     return-void
+2026-11-07T20:39:36.2222625Z .end method
+2026-11-07T20:39:36.2222736Z 
+2026-11-07T20:39:36.2222879Z .method private static final onPause$lambda$4()V
+2026-11-07T20:39:36.2223181Z     .registers 0
+2026-11-07T20:39:36.2223303Z 
+2026-11-07T20:39:36.2223386Z     .line 88
+2026-11-07T20:39:36.2223729Z     invoke-static {}, Lcom/blackhub/bronline/game/core/JNILib;->pauseEvent()V
+2026-11-07T20:39:36.2224046Z 
+2026-11-07T20:39:36.2224136Z     return-void
+2026-11-07T20:39:36.2224337Z .end method
+2026-11-07T20:39:36.2224452Z 
+2026-11-07T20:39:36.2224603Z .method private static final onResume$lambda$3()V
+2026-11-07T20:39:36.2225001Z     .registers 0
+2026-11-07T20:39:36.2225237Z 
+2026-11-07T20:39:36.2225389Z     .line 84
+2026-11-07T20:39:36.2226002Z     invoke-static {}, Lcom/blackhub/bronline/game/core/JNILib;->resumeEvent()V
+2026-11-07T20:39:36.2226798Z 
+2026-11-07T20:39:36.2226923Z     return-void
+2026-11-07T20:39:36.2227154Z .end method
+2026-11-07T20:39:36.2227274Z 
+2026-11-07T20:39:36.2227520Z .method private static final onTouchEvent$lambda$2(IIIIIIII)V
+2026-11-07T20:39:36.2228138Z     .registers 8
+2026-11-07T20:39:36.2228362Z 
+2026-11-07T20:39:36.2228500Z     .line 67
+2026-11-07T20:39:36.2229067Z     invoke-static/range {p0 .. p7}, Lcom/blackhub/bronline/game/core/JNILib;->multiTouchEvent(IIIIIIII)V
+2026-11-07T20:39:36.2229477Z 
+2026-11-07T20:39:36.2229574Z     return-void
+2026-11-07T20:39:36.2229777Z .end method
+2026-11-07T20:39:36.2229886Z 
+2026-11-07T20:39:36.2229896Z 
+2026-11-07T20:39:36.2229997Z # virtual methods
+2026-11-07T20:39:36.2230277Z .method public onPause()V
+2026-11-07T20:39:36.2230712Z     .registers 2
+2026-11-07T20:39:36.2230945Z 
+2026-11-07T20:39:36.2231090Z     .line 88
+2026-11-07T20:39:36.2231855Z     new-instance v0, Lcom/blackhub/bronline/game/core/JNIGLSurfaceView$$ExternalSyntheticLambda2;
+2026-11-07T20:39:36.2232829Z 
+2026-11-07T20:39:36.2233031Z ===== JNIActivity around touch =====
+2026-11-07T20:39:36.2233601Z 
+2026-11-07T20:39:36.2234042Z .field private final networkLostListener:Lkotlin/jvm/functions/Function0;
+2026-11-07T20:39:36.2234887Z     .annotation system Ldalvik/annotation/Signature;
+2026-11-07T20:39:36.2235455Z         value = {
+2026-11-07T20:39:36.2235996Z             "Lkotlin/jvm/functions/Function0<",
+2026-11-07T20:39:36.2236776Z             "Lkotlin/Unit;",
+2026-11-07T20:39:36.2237227Z             ">;"
+2026-11-07T20:39:36.2237594Z         }
+2026-11-07T20:39:36.2237951Z     .end annotation
+2026-11-07T20:39:36.2238322Z .end field
+2026-11-07T20:39:36.2238518Z 
+2026-11-07T20:39:36.2238704Z .field private paused:Z
+2026-11-07T20:39:36.2238968Z 
+2026-11-07T20:39:36.2239576Z .field public phoneStateListener:Lcom/blackhub/bronline/game/core/utils/JNIPhoneStateListener;
+2026-11-07T20:39:36.2240328Z 
+2026-11-07T20:39:36.2240900Z .field preferences:Lcom/blackhub/bronline/game/core/preferences/PreferencesRepository;
+2026-11-07T20:39:36.2241845Z     .annotation runtime Ljavax/inject/Inject;
+2026-11-07T20:39:36.2242380Z     .end annotation
+2026-11-07T20:39:36.2242608Z .end field
+2026-11-07T20:39:36.2242729Z 
+2026-11-07T20:39:36.2242959Z .field private stampView:Landroidx/compose/ui/platform/ComposeView;
+2026-11-07T20:39:36.2243256Z 
+2026-11-07T20:39:36.2243264Z 
+2026-11-07T20:39:36.2243361Z # direct methods
+2026-11-07T20:39:36.2243731Z .method public static synthetic $r8$lambda$1Co-3DG5TDWypjngCuvEv7yB3To()V
+2026-11-07T20:39:36.2244123Z     .registers 9
+2026-11-07T20:39:36.2244246Z 
+2026-11-07T20:39:36.2244342Z     const/4 v0, 0x0
+2026-11-07T20:39:36.2244476Z 
+2026-11-07T20:39:36.2244564Z     move v2, v0
+2026-11-07T20:39:36.2244692Z 
+2026-11-07T20:39:36.2244774Z     :goto_2
+2026-11-07T20:39:36.2244969Z     const/4 v0, 0x3
+2026-11-07T20:39:36.2245100Z 
+2026-11-07T20:39:36.2245204Z     if-ge v2, v0, :cond_12
+2026-11-07T20:39:36.2245367Z 
+2026-11-07T20:39:36.2245465Z     const/4 v7, 0x0
+2026-11-07T20:39:36.2245587Z 
+2026-11-07T20:39:36.2245681Z     const/4 v8, 0x0
+2026-11-07T20:39:36.2245801Z 
+2026-11-07T20:39:36.2245900Z     const/4 v1, 0x1
+2026-11-07T20:39:36.2246021Z 
+2026-11-07T20:39:36.2246115Z     const/4 v3, 0x0
+2026-11-07T20:39:36.2246240Z 
+2026-11-07T20:39:36.2246329Z     const/4 v4, 0x0
+2026-11-07T20:39:36.2246454Z 
+2026-11-07T20:39:36.2246830Z     const/4 v5, 0x0
+2026-11-07T20:39:36.2246978Z 
+2026-11-07T20:39:36.2247073Z     const/4 v6, 0x0
+2026-11-07T20:39:36.2247202Z 
+2026-11-07T20:39:36.2247293Z     .line 314
+2026-11-07T20:39:36.2247761Z     invoke-static/range {v1 .. v8}, Lcom/blackhub/bronline/game/core/JNILib;->multiTouchEvent(IIIIIIII)V
+2026-11-07T20:39:36.2248159Z 
+2026-11-07T20:39:36.2248280Z     add-int/lit8 v2, v2, 0x1
+2026-11-07T20:39:36.2248441Z 
+2026-11-07T20:39:36.2248536Z     goto :goto_2
+2026-11-07T20:39:36.2248670Z 
+2026-11-07T20:39:36.2248757Z     :cond_12
+2026-11-07T20:39:36.2248961Z     return-void
+2026-11-07T20:39:36.2249174Z .end method
+2026-11-07T20:39:36.2249291Z 
+2026-11-07T20:39:36.2249414Z ===== GUIManager.sendJsonData =====
+2026-11-07T20:39:36.2260537Z ===== who calls deliverNetworkEvents =====
+2026-11-07T20:39:36.3723000Z s4/com/blackhub/bronline/game/core/JNILib.smali:68:    invoke-static {p0, p1}, Lcom/blackhub/bronline/game/core/JNILib;->deliverNetworkEvents(I[B)V
+2026-11-07T20:39:36.3724778Z s4/com/blackhub/bronline/game/core/JNILib.smali:73:.method public static native deliverNetworkEvents(I[B)V
+2026-11-07T20:39:36.3864041Z Post job cleanup.
+2026-11-07T20:39:36.5367635Z (node:2385) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-11-07T20:39:36.5369374Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-11-07T20:39:36.5631498Z Post job cleanup.
+2026-11-07T20:39:36.6635438Z [command]/usr/bin/git version
+2026-11-07T20:39:36.6685014Z git version 2.56.0
+2026-11-07T20:39:36.6731271Z Temporarily overriding HOME='/home/runner/work/_temp/673d676f-a836-4051-8553-4c85f27947a5' before making global git config changes
+2026-11-07T20:39:36.6732840Z Adding repository directory to the temporary git global config as a safe directory
+2026-11-07T20:39:36.6738192Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/RakCRMP-Cheat-BR/RakCRMP-Cheat-BR
+2026-11-07T20:39:36.6785263Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-11-07T20:39:36.6826777Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-11-07T20:39:36.7102059Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-11-07T20:39:36.7134653Z http.https://github.com/.extraheader
+2026-11-07T20:39:36.7148545Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+2026-11-07T20:39:36.7189207Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-11-07T20:39:36.7514759Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-11-07T20:39:36.7572801Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-11-07T20:39:36.8129533Z Cleaning up orphan processes
+2026-11-07T20:39:36.8533620Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/setup-java@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
