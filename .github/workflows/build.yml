@@ -5,7 +5,7 @@ on:
   push:
     branches: [main]
     paths-ignore:
-      - 'keystore/**'
+      - '*.apk'
       - 'README.md'
       - '*.md'
 
@@ -15,6 +15,10 @@ permissions:
 env:
   VERSION_FILE: VERSION
   BASE_APK_URL: https://github.com/${{ github.repository }}/releases/download/base/launcher-base.apk
+  # The stock launcher is signed with the public AOSP test key. Signing our
+  # build with the same key means it installs as an UPDATE over the original:
+  # no uninstall, no re-download of the 3 GB cache, launcher icon intact.
+  BASE_CERT_SHA256: a40da80a59d170caa950cf15c18c454d47a39b26989d8b640ecd745ba71bf5dc
 
 jobs:
   apk:
@@ -27,22 +31,26 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Keystore
+      - name: Signing key (AOSP test key, same as the stock launcher)
         run: |
           set -e
-          mkdir -p keystore
-          if [ ! -f keystore/rakcrmp.p12 ]; then
-            keytool -genkeypair -keystore keystore/rakcrmp.p12 -storetype PKCS12 \
-              -alias rakcrmp -keyalg RSA -keysize 2048 -validity 10000 \
-              -storepass rakcrmp123 -keypass rakcrmp123 \
-              -dname "CN=RakCRMP Cheat, O=RAK, C=RU"
-            git config user.name "rakcrmp-bot"
-            git config user.email "rakcrmp@users.noreply.github.com"
-            git add keystore/rakcrmp.p12
-            git commit -m "signing key [skip ci]" || true
-            git push origin HEAD:main || true
-          fi
-          ls -la keystore
+          pip install --quiet cryptography
+          mkdir -p /tmp/testkey
+          for f in testkey.pk8 testkey.x509.pem; do
+            curl -fsSL "https://android.googlesource.com/platform/build/+/refs/heads/main/target/product/security/$f?format=TEXT" \
+              | base64 -d > "/tmp/testkey/$f"
+          done
+          ls -l /tmp/testkey
+          python3 - <<'PY'
+          import hashlib
+          from cryptography import x509
+          from cryptography.hazmat.primitives import serialization
+          cert = x509.load_pem_x509_certificate(open('/tmp/testkey/testkey.x509.pem','rb').read())
+          fp = hashlib.sha256(cert.public_bytes(serialization.Encoding.DER)).hexdigest()
+          print('test key:', cert.subject.rfc4514_string())
+          print('sha256   :', fp)
+          assert fp == __import__('os').environ['BASE_CERT_SHA256'], 'unexpected test key'
+          PY
 
       - name: Base APK
         run: |
@@ -51,6 +59,14 @@ jobs:
           ls -lh /tmp/base.apk
           unzip -l /tmp/base.apk | grep -q 'lib/arm64-v8a/libblackrussia-client.so'
           unzip -l /tmp/base.apk | grep -c 'classes'
+          python3 - <<'PY'
+          import sys, os
+          sys.path.insert(0, 'tools')
+          import apkpack
+          errs, fp = apkpack.verify('/tmp/base.apk', os.environ['BASE_CERT_SHA256'])
+          assert not errs, errs
+          print('base apk verified, signer', fp)
+          PY
 
       - name: Tests
         run: CXX=clang++ ./tools/run_tests.sh
@@ -95,13 +111,6 @@ jobs:
           curl -fsSL -o tools/jars/antlr.jar      $base/org/antlr/antlr-runtime/3.5.2/antlr-runtime-3.5.2.jar
           ls -lh tools/jars
 
-      - name: Loader dex
-        run: |
-          set -e
-          CP=$(ls tools/jars/*.jar | tr '\n' ':')
-          java -cp "$CP" org.jf.smali.Main a tools/loader.smali -o build/classes8.dex
-          ls -lh build/classes8.dex
-
       - name: Patch APK
         run: |
           set -e
@@ -110,31 +119,61 @@ jobs:
           python3 tools/patch_apk.py \
             --base /tmp/base.apk \
             --lib build/librakcheat.so \
-            --loader-dex build/classes8.dex \
             --tools tools/jars \
-            --out "out/RakCRMP-Cheat-${VER}.apk" \
-            --keystore keystore/rakcrmp.p12 --ks-pass rakcrmp123 --key-alias rakcrmp
+            --loader-smali tools/loader.smali \
+            --testkey /tmp/testkey \
+            --cert-sha256 "$BASE_CERT_SHA256" \
+            --out "out/RakCRMP-Cheat-${VER}.apk"
           ls -lh out
 
       - name: Verify package
         run: |
           set -e
           APK=$(ls out/*.apk)
-          unzip -l "$APK" | grep -E 'classes8.dex|librakcheat.so' 
-          rm -rf /tmp/verify && mkdir -p /tmp/verify && cd /tmp/verify
-          unzip -q "$OLDPWD/$APK" classes8.dex lib/arm64-v8a/librakcheat.so 'classes*.dex'
-          file lib/arm64-v8a/librakcheat.so
-          strings lib/arm64-v8a/librakcheat.so | grep -c RakCRMP
-          strings classes8.dex | grep -i rakcheat
-          for d in classes*.dex; do
-            if strings "$d" | grep -q 'Lrakcheat/Loader;'; then echo "patched dex: $d"; fi
-          done
-          # the loader call must be present exactly in the dex that loads the game lib
-          apps=$(ls classes*.dex | wc -l); echo "dex files: $apps"
-          # round-trip: the patched dex must still decode cleanly
-          CP=$(ls "$OLDPWD"/tools/jars/*.jar | tr '\n' ':')
-          java -cp "$CP" org.jf.baksmali.Main d classes4.dex -o /tmp/roundtrip >/dev/null
+          python3 - "$APK" <<'PY'
+          import sys, zipfile, struct
+          sys.path.insert(0, 'tools')
+          import apkpack, os
+
+          apk = sys.argv[1]
+          errs, fp = apkpack.verify(apk, os.environ['BASE_CERT_SHA256'])
+          assert not errs, errs
+          print('zip / alignment / v2 digest / v2 signature OK, signer', fp)
+
+          z = zipfile.ZipFile(apk)
+          base = zipfile.ZipFile('/tmp/base.apk')
+          added = sorted(set(z.namelist()) - set(base.namelist()))
+          removed = sorted(set(base.namelist()) - set(z.namelist()))
+          assert added == ['lib/arm64-v8a/librakcheat.so'], added
+          assert not removed, removed
+
+          changed = [n for n in base.namelist() if base.read(n) != z.read(n)]
+          print('changed entries:', changed)
+          assert len(changed) == 1, 'only the launcher dex may change'
+          dexname = changed[0]
+          assert dexname.startswith('classes')
+
+          so = z.read('lib/arm64-v8a/librakcheat.so')
+          assert so[:4] == b'\x7fELF' and so[18:20] == b'\xb7\x00', 'not an arm64 ELF'
+          dex = z.read(dexname)
+          assert b'Lrakcheat/Loader;' in dex
+          assert dex[:4] == b'dex\n'
+          print('patched dex:', dexname, len(dex), 'bytes')
+
+          i = z.getinfo('lib/arm64-v8a/librakcheat.so')
+          raw = open(apk, 'rb').read()
+          nlen, elen = struct.unpack_from('<HH', raw, i.header_offset + 26)
+          off = i.header_offset + 30 + nlen + elen
+          assert off % 4 == 0, off
+          print('.so data offset', off)
+
+          # the patched dex must still decode cleanly
+          open('/tmp/check.dex', 'wb').write(dex)
+          PY
+          CP=$(ls tools/jars/*.jar | tr '\n' ':')
+          java -cp "$CP" org.jf.baksmali.Main d /tmp/check.dex -o /tmp/roundtrip >/dev/null
           grep -c 'Lrakcheat/Loader;->load()V' /tmp/roundtrip/com/blackhub/bronline/game/core/JNILib.smali
+          grep -c 'class public final Lrakcheat/Loader;' /tmp/roundtrip/rakcheat/Loader.smali
 
       - uses: actions/upload-artifact@v4
         with:

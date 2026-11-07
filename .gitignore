@@ -4,3 +4,7 @@ tools/jars/
 native/src/font_atlas.h
 *.apk
 *.log
+
+# python
+__pycache__/
+*.pyc
