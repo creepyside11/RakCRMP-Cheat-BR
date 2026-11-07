@@ -35,16 +35,15 @@ jobs:
           cd /tmp && rm -rf apkx && mkdir apkx && cd apkx
           unzip -q /tmp/base.apk 'classes*.dex'
           CP=$(ls /home/runner/work/*/*/tools/jars/*.jar | tr '\n' ':')
-          echo "== loadLibrary site =="
           mkdir -p s4 && java -cp "$CP" org.jf.baksmali.Main d classes4.dex -o s4 >/dev/null 2>&1
-          grep -rl 'blackrussia-client' s4 | head
-          grep -rh -B6 -A6 'blackrussia-client' s4 | head -40
-          echo "== multiTouchEvent callers =="
-          grep -rn 'multiTouchEvent' s4 | head -10
-          f=$(grep -rl 'multiTouchEvent' s4 | head -1)
-          echo "file: $f"
-          if [ -n "$f" ]; then grep -n -B25 'multiTouchEvent' "$f" | tail -80; fi
-          echo "== sendJsonData callers =="
-          grep -rn 'sendJsonData' s4 | head -10
-          echo "== deliverNetworkEvents =="
-          grep -rn 'deliverNetworkEvents' s4 | head -10
+          echo "===== JNILib.smali 30-95 ====="
+          sed -n '30,95p' s4/com/blackhub/bronline/game/core/JNILib.smali
+          echo "===== JNIGLSurfaceView around touch ====="
+          grep -n '.method' s4/com/blackhub/bronline/game/core/JNIGLSurfaceView.smali | head -40
+          sed -n '120,200p' s4/com/blackhub/bronline/game/core/JNIGLSurfaceView.smali
+          echo "===== JNIActivity around touch ====="
+          sed -n '120,180p' s4/com/blackhub/bronline/game/core/JNIActivity.smali
+          echo "===== GUIManager.sendJsonData ====="
+          awk '/\.method public sendJsonData\(I, Lorg\/json\/JSONObject;\)V/,/^\.end method/' s4/com/blackhub/bronline/game/GUIManager.smali | head -60
+          echo "===== who calls deliverNetworkEvents ====="
+          grep -rn 'deliverNetworkEvents' s4 | head
