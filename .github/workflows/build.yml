@@ -144,7 +144,8 @@ jobs:
           assert z.testzip() is None
           added = sorted(set(z.namelist()) - set(base.namelist()))
           removed = sorted(set(base.namelist()) - set(z.namelist()))
-          assert added == ['lib/arm64-v8a/librakcheat.so'], added
+          assert set(added) <= {'lib/arm64-v8a/librakcheat.so'}, added
+          assert 'lib/arm64-v8a/librakcheat.so' in added, added
           assert not removed, removed
           changed = [n for n in base.namelist() if base.read(n) != z.read(n)]
           assert len(changed) == 1 and changed[0].startswith('classes'), changed

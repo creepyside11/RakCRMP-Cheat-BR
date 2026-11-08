@@ -107,6 +107,7 @@ def main():
         with zipfile.ZipFile(args.base, 'r') as zin, zipfile.ZipFile(unsigned, 'w') as zout:
             for item in zin.infolist():
                 if item.is_dir():
+                    zout.writestr(item, b'')
                     continue
                 if item.filename == dexname:
                     data = open(newdex, 'rb').read()
