@@ -5,14 +5,14 @@ Build the RakCRMP Cheat APK from the stock launcher APK.
 Nothing about the app is rebuilt: the dex that loads libblackrussia-client.so
 gets one `invoke-static` for our loader (the loader class is added to that same
 dex, so no extra classesN.dex appears), lib/arm64-v8a/librakcheat.so is added,
-and every other entry keeps its exact compressed bytes. The result is signed
-with APK Signature Scheme v2 using the same key as the stock launcher, so it
-installs as a normal update: data, cache and launcher icon stay put.
+and every other resource is copied unchanged. ZIP layout is rebuilt with Python,
+then Android's zipalign and apksigner produce a standard installable APK using
+the stock launcher's signing certificate.
 """
 import argparse, os, re, shutil, subprocess, sys, tempfile, zipfile
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import apkpack
+
 
 
 def run(cmd, **kw):
@@ -74,7 +74,7 @@ def main():
     ap.add_argument('--loader-smali', required=True, help='rakcheat/Loader.smali')
     ap.add_argument('--out', required=True)
     ap.add_argument('--testkey', required=True, help='dir with testkey.pk8 + testkey.x509.pem')
-    ap.add_argument('--cert-sha256', default=None, help='pin the signer certificate')
+    ap.add_argument('--android-home', default=os.environ.get('ANDROID_HOME', ''))
     args = ap.parse_args()
 
     work = tempfile.mkdtemp(prefix='rakcheat-')
@@ -104,23 +104,41 @@ def main():
         print('patched dex size:', os.path.getsize(newdex))
 
         unsigned = os.path.join(work, 'unsigned.apk')
-        count = apkpack.repack(args.base, unsigned,
-                               replace={dexname: open(newdex, 'rb').read()},
-                               add=[('lib/arm64-v8a/librakcheat.so',
-                                     open(args.lib, 'rb').read(), 0)])
-        print('entries:', count)
-        zin.close()
+        with zipfile.ZipFile(args.base, 'r') as zin, zipfile.ZipFile(unsigned, 'w') as zout:
+            for item in zin.infolist():
+                if item.is_dir():
+                    continue
+                if item.filename == dexname:
+                    data = open(newdex, 'rb').read()
+                else:
+                    data = zin.read(item.filename)
+                zi = zipfile.ZipInfo(item.filename, date_time=item.date_time)
+                zi.compress_type = item.compress_type
+                zi.external_attr = item.external_attr
+                zi.internal_attr = item.internal_attr
+                zi.create_system = item.create_system
+                zi.flag_bits = item.flag_bits | 0x800
+                zout.writestr(zi, data)
+            zout.write(args.lib, 'lib/arm64-v8a/librakcheat.so', compress_type=zipfile.ZIP_STORED)
 
-        key, _, cert_der = apkpack.load_key(os.path.join(args.testkey, 'testkey.pk8'),
-                                            os.path.join(args.testkey, 'testkey.x509.pem'))
-        signed = apkpack.sign_v2(open(unsigned, 'rb').read(), key, cert_der)
-        open(args.out, 'wb').write(signed)
-
-        errs, fp = apkpack.verify(args.out, args.cert_sha256)
-        if errs:
-            raise SystemExit('signed APK failed verification: %s' % errs)
+        build_tools = os.path.join(args.android_home, 'build-tools')
+        versions = sorted(os.listdir(build_tools), reverse=True)
+        if not versions:
+            raise SystemExit('Android build-tools not found')
+        bt = os.path.join(build_tools, versions[0])
+        zipalign = os.path.join(bt, 'zipalign')
+        apksigner = os.path.join(bt, 'apksigner')
+        aligned = os.path.join(work, 'aligned.apk')
+        run([zipalign, '-P', '16', '-f', '4', unsigned, aligned])
+        key_pem = os.path.join(args.testkey, 'testkey.pem')
+        if not os.path.exists(key_pem):
+            raise SystemExit('PKCS#8 PEM key missing: ' + key_pem)
+        run([apksigner, 'sign', '--key', key_pem,
+             '--cert', os.path.join(args.testkey, 'testkey.x509.pem'),
+             '--v1-signing-enabled', 'false', '--v2-signing-enabled', 'true',
+             '--v3-signing-enabled', 'false', '--out', args.out, aligned])
+        run([apksigner, 'verify', '--verbose', '--print-certs', args.out])
         print('signed OK ->', args.out, os.path.getsize(args.out), 'bytes')
-        print('signer sha256:', fp)
     finally:
         shutil.rmtree(work, ignore_errors=True)
 
