@@ -12,7 +12,15 @@ FetchContent_Declare(dobby
     GIT_REPOSITORY https://github.com/jmpews/Dobby.git
     GIT_TAG ${DOBBY_GIT_TAG}
 )
-FetchContent_MakeAvailable(dobby)
+FetchContent_GetProperties(dobby)
+if(NOT dobby_POPULATED)
+    FetchContent_Populate(dobby)
+endif()
+execute_process(
+    COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/../tools/patch_dobby.py ${dobby_SOURCE_DIR}
+    COMMAND_ERROR_IS_FATAL ANY
+)
+add_subdirectory(${dobby_SOURCE_DIR} ${dobby_BINARY_DIR})
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
