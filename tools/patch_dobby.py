@@ -36,8 +36,15 @@ memory.write_text(s)
 
 asm = root / "source/TrampolineBridge/ClosureTrampolineBridge/arm64/closure_bridge_arm64.asm"
 s = asm.read_text()
-old = "#if defined(__WIN32__) || defined(__APPLE__)"
-new = "#if (defined(__WIN32__) || defined(__APPLE__)) && !defined(__ANDROID__)"
+old = '''adrp TMP_REG_0, cdecl(common_closure_bridge_handler)@PAGE
+add TMP_REG_0, TMP_REG_0, cdecl(common_closure_bridge_handler)@PAGEOFF'''
+new = '''#if defined(__ANDROID__)
+adrp TMP_REG_0, cdecl(common_closure_bridge_handler)
+add TMP_REG_0, TMP_REG_0, :lo12:cdecl(common_closure_bridge_handler)
+#else
+adrp TMP_REG_0, cdecl(common_closure_bridge_handler)@PAGE
+add TMP_REG_0, TMP_REG_0, cdecl(common_closure_bridge_handler)@PAGEOFF
+#endif'''
 if old in s:
     s = s.replace(old, new, 1)
 elif new not in s:
