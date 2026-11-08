@@ -130,10 +130,8 @@ def main():
         apksigner = os.path.join(bt, 'apksigner')
         aligned = os.path.join(work, 'aligned.apk')
         run([zipalign, '-P', '16', '-f', '4', unsigned, aligned])
-        key_pem = os.path.join(args.testkey, 'testkey.pem')
-        if not os.path.exists(key_pem):
-            raise SystemExit('PKCS#8 PEM key missing: ' + key_pem)
-        run([apksigner, 'sign', '--key', key_pem,
+        key_der = os.path.join(args.testkey, 'testkey.pk8')
+        run([apksigner, 'sign', '--key', key_der,
              '--cert', os.path.join(args.testkey, 'testkey.x509.pem'),
              '--v1-signing-enabled', 'false', '--v2-signing-enabled', 'true',
              '--v3-signing-enabled', 'false', '--out', args.out, aligned])

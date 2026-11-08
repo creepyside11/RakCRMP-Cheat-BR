@@ -40,7 +40,6 @@ jobs:
             curl -fsSL "https://android.googlesource.com/platform/build/+/refs/heads/main/target/product/security/$f?format=TEXT" \
               | base64 -d > "/tmp/testkey/$f"
           done
-          openssl pkcs8 -inform DER -in /tmp/testkey/testkey.pk8 -out /tmp/testkey/testkey.pem -nocrypt
           ls -l /tmp/testkey
           python3 - <<'PY'
           import hashlib
