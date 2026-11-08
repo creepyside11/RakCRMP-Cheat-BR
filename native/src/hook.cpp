@@ -6,6 +6,9 @@
 #include <link.h>
 #include <string.h>
 #include <stdint.h>
+#if defined(RC_USE_DOBBY)
+#include <dobby.h>
+#endif
 
 namespace rchook {
 
@@ -98,6 +101,21 @@ void* sym_or_offset(void* handle, const char* name, uintptr_t offset) {
 bool install(Hook& h, void* target, void* detour) {
     if (!target || !detour) return false;
 
+#if defined(RC_USE_DOBBY)
+    void* trampoline = nullptr;
+    int rc = DobbyHook(target, detour, &trampoline);
+    if (rc != 0 || !trampoline) {
+        rc_log("DobbyHook failed target=%p rc=%d", target, rc);
+        return false;
+    }
+    h.target = target;
+    h.tramp = trampoline;
+    h.installed = true;
+    rc_log("DobbyHook installed target=%p detour=%p trampoline=%p", target, detour, trampoline);
+    return true;
+#endif
+
+    // host-side deterministic test hook; Android uses Dobby above.
     // walk through entry thunks so we patch the body, not the jump
     for (int hop = 0; hop < 4; hop++) {
         void* next = follow_thunk(target);

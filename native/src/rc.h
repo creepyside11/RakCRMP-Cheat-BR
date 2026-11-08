@@ -32,7 +32,7 @@ static inline int __android_log_print(int, const char*, const char*, ...) { retu
 #endif
 
 #define RC_TAG "RakCRMPCheat"
-#define RC_VERSION "1.0.9"
+#define RC_VERSION "1.0.10"
 
 // ---------------------------------------------------------------- logging
 void  rc_log(const char* fmt, ...);

@@ -98,6 +98,8 @@ def main():
         pkg = os.path.join(smalidir, 'rakcheat')
         os.makedirs(pkg, exist_ok=True)
         shutil.copyfile(args.loader_smali, os.path.join(pkg, 'Loader.smali'))
+        status_smali = os.path.join(os.path.dirname(args.loader_smali), 'status_runnable.smali')
+        shutil.copyfile(status_smali, os.path.join(pkg, 'StatusRunnable.smali'))
 
         newdex = os.path.join(work, 'patched.dex')
         run(['java', '-Xmx3g', '-cp', cp, 'org.jf.smali.Main', 'a', smalidir, '-o', newdex])
